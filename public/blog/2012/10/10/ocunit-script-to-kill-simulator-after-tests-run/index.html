@@ -1,0 +1,136 @@
+
+<!DOCTYPE HTML>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>OCUnit - Script to Kill Simulator After Tests Run  | Mark Struzinski</title>
+
+	<meta name="author" content="Mark Struzinski"> 
+	
+	<meta name="description" content="I’m in the process of adding OCUnit tests to an existing iOS code base. Throughout this process, the biggest pain point I have encountered has been &hellip;"> <meta name="keywords" content="">
+
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+	<link href="http://feedpress.me/markstruzinski" rel="alternate" title="Mark Struzinski" type="application/atom+xml">
+	<link rel="canonical" href="">
+	<link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+	<link href="/stylesheets/font-awesome.min.css" rel="stylesheet" type="text/css">
+	
+	<!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+	
+</head>
+
+
+
+<body>
+	<header id="header" class="inner"><h1>Mark Struzinski</h1>
+<nav id="main-nav"><ul>
+	<li><a href="/">Blog</a></li>
+	<li><a href="/archives">Archive</a></li>
+	<li><a href="/about">About</a></li>
+    <li><a href="/portfolio">Portfolio</a></li>
+</ul>
+</nav>
+
+
+</header>
+
+	<div id="content" class="inner"><article class="post">
+	<h2 class="title">OCUnit - Script to Kill Simulator After Tests Run</h2>
+	<div class="entry-content"><p>I’m in the process of adding OCUnit tests to an existing iOS code base. Throughout this process, the biggest pain point I have encountered has been the simulator taking over the screen after an application test suite has run.</p>
+
+<!-- more -->
+
+
+<p>This behavior completely breaks the flow of red/green/refactor, especially when you are on a roll. Here is a typical round trip for me when testing using the default behavior:</p>
+
+<ol>
+<li>Make a code change</li>
+<li>Hit <strong>⌘U</strong> to run the test suite</li>
+<li>Simulator appears and takes over the screen</li>
+<li>Tests complete in Xcode, which is now behind the simulator</li>
+<li><strong>⌘ + Tab</strong> back to Xcode to check the results, or <strong>⌘ + Tab</strong> to the simulator, then <strong>⌘ + Q</strong> to quit it</li>
+</ol>
+
+
+<p>I solved this problem by running a script to close the simulator. To automate this, I hooked into Xcode’s behaviors functionality. Using behaviors, you can specify actions to run before and after testing runs.</p>
+
+<p>Here is a breakdown of how I am now forcing the simulator to close when tests complete:</p>
+
+<ul>
+<li>Open a text file and add the following shell script</li>
+</ul>
+
+
+<figure class='code'><figcaption><span>Close Simulator Script</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="c">#!/bin/sh</span>
+</span><span class='line'>osascript -e <span class="s1">&#39;tell app &quot;iPhone Simulator&quot; to quit&#39;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>Create a folder at the base level of your project named Scripts</li>
+<li>Save the text file into this folder and name it <strong>quitsim.sh</strong></li>
+<li>Open a terminal session, cd to the new Scripts folder, and run the following command on the file to make it executable:</li>
+</ul>
+
+
+<figure class='code'><figcaption><span>Make file executable</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>chmod +x quitsim.sh
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>Now, open Xcode, and go to preferences(⌘,)</li>
+<li>Go to the Behaviors tab</li>
+<li>Under the Testing category, select Succeeds</li>
+<li>Scroll to the bottom, and check the Run selection</li>
+<li>Select <strong>Choose Script &hellip;</strong> from the pull down menu</li>
+<li>Select the script you just saved into the Scripts folder</li>
+<li>Repeat this process for the Fails selection in the Testing category</li>
+</ul>
+
+
+<p>You should now be able to run your test suite and have the simulator close upon completion or failure. This has removed a consistent annoyance for me and sped up my workflow just a little bit.</p>
+
+<p>Every small improvement helps.</p>
+</div>
+
+
+<div class="meta">
+	<div class="date">
+
+
+
+
+
+
+
+
+  
+
+
+
+<time datetime="2012-10-10T09:55:00-04:00" pubdate data-updated="true">Oct 10th, 2012</time></div>
+	
+
+<div class="tags">
+
+	<a class='category' href='/blog/categories/ocunit/'>ocunit</a>, <a class='category' href='/blog/categories/simulator/'>simulator</a>
+
+</div>
+
+
+</div>
+</article>
+</div>
+	<footer id="footer" class="inner">Copyright &copy; 2014
+ Mark Struzinski 
+<br>
+Powered by Octopress.
+</footer>
+	
+
+</body>
+</html>

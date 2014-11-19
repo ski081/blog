@@ -1,0 +1,270 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: unit testing | Mark Struzinski]]></title>
+  <link href="http://markstruzinski.com/blog/categories/unit-testing/atom.xml" rel="self"/>
+  <link href="http://markstruzinski.com/"/>
+  <updated>2014-11-16T19:37:40-05:00</updated>
+  <id>http://markstruzinski.com/</id>
+  <author>
+    <name><![CDATA[Mark Struzinski]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[Unit Testing Patterns for Asynchronous Networking Communications]]></title>
+    <link href="http://markstruzinski.com/blog/2013/10/10/unit-testing-patterns-for-asynchronous-networking-communications/"/>
+    <updated>2013-10-10T06:59:00-04:00</updated>
+    <id>http://markstruzinski.com/blog/2013/10/10/unit-testing-patterns-for-asynchronous-networking-communications</id>
+    <content type="html"><![CDATA[<p>A common issue I always run into is how to test asynchronous methods, especially networking calls. I used test the result of the calls, such as the parsing of return data, because testing the entire method proved impossible. I recently read an <a href="http://www.objc.io/issue-2/async-testing.html">article</a> from the excellent <a href="http://www.objc.io/">objc.io</a> publication on asynchornous testing. By combining the patterns used in this article with some refactoring, I finally have my networking code under unit tests. Here&rsquo;s what I did.</p>
+
+<!-- more -->
+
+
+<h3>Architecture</h3>
+
+<p>First, I will detail how my app was architected <strong>prior</strong> to setting up unit tests. I use <a href="https://github.com/AFNetworking/AFNetworking">AFNetworking</a> to handle all API calls, and make use of the <a href="http://engineering.gowalla.com/AFNetworking/Classes/AFHTTPClient.html">AFHTTPClient</a> to centralize all calls to a specific base URL. The HTTPClient would be a singleton, and each service call would be passed a typed return block to execute on completion or failure. Here is an example for a service call to get a list of items:</p>
+
+<p>In my header:</p>
+
+<pre><code class="objective-c APIClient.h">@interface APIClient : AFHTTPClient
+
+typedef void(^ListItemsRequestReturnBlock)(BOOL success,NSArray *itemsArray,NSError *error);
+
+-(void)sendItemsRequestForGroupId:(NSNumber *)groupId completionBlock:(ListItemsRequestReturnBlock)itemsReturnBlock;
+
+@end
+</code></pre>
+
+<p>And the implementation:</p>
+
+<pre><code class="objective-c APIClient.m">-(void)sendItemsRequestForGroupId:(NSNumber *)groupId completionBlock:(ListItemsRequestReturnBlock)itemsReturnBlock{
+    Group *group = [Group findFirstByAttribute:GroupAttributes.groupID
+                                        withValue:groupId];
+
+    NSDictionary *paramsDict = @{
+                                 API_PARAMETER_KEY_ACTION           : API_PARAMETER_ACTION_VALUE_ITEMS_REQUEST,
+                                 API_PARAMETER_KEY_GROUP           : groupId
+                                 };
+
+    [[SalesCoachAPIClient sharedClient] getPath:nil
+                                     parameters:paramsDict
+                                        success:^(AFHTTPRequestOperation *operation, id responseObject) {
+                                        NSArray *lessonClassesArray = nil;
+                                        if ([self checkAPIResponseDictForSuccess:responseObject]) {
+                                            itemsArray = [Item itemsArrayFromAPIDict:responseObject];
+
+                                            if (itemsArray) {
+                                                [group setItems:[NSSet setWithArray:itemsArray]];
+                                                [[NSManagedObjectContext defaultContext] saveToPersistentStoreAndWait];
+                                            }
+                                        }
+                                            if (itemsArray) {
+                                                itemsReturnBlock(YES,itemsArray,nil);
+                                            }else{
+                                                itemsReturnBlock(NO,nil,nil);
+                                            }
+                                        } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
+                                            itemsReturnBlock(NO,nil,error);
+                                        }];
+
+}
+</code></pre>
+
+<p>This same pattern is used each time I want to make a call into my API, and a new call is set up for each endpoint. The pattern works well, and has proven itself useful. However, it always felt like the APIClient class was doing a little too much work, and had too much knowledge of the internals of parsing the JSON data returned. This proved to be true once I attempted to apply tests to these methods.</p>
+
+<h3>Building the Tests</h3>
+
+<p>The first lesson learned: always test and code at the same time (preferably in that order)! This is about the tenth time I have told myself I was too time constrained to write tests while I was coding. In hindsight, it usually means I&rsquo;ll be doing some heavy refactoring after I start writing tests. The tests always show that the code I wrote quickly is too interdependent, and needs to be broken down more into logical components.</p>
+
+<p>In order to separate concerns and to facilitate mocking data parsing responses, I began to move data parsing code and logic into a separate helper class. This class would be responsible for the following:</p>
+
+<ol>
+<li>Parse the JSON response</li>
+<li>Report success ior failure</li>
+<li>Create and populate data model objects out of the response</li>
+<li>Save the objects to core data</li>
+<li>Return core data object(s) from the call after parsing and saving is complete</li>
+</ol>
+
+
+<p>So with that in mind, the above code changes implementation to look like this:</p>
+
+<pre><code class="objective-c APIClient.m">-(void)sendItemsRequestForGroupId:(NSNumber *)groupId dataManager:(DataProcessingManager *)dataManager completionBlock:(ListItemsRequestReturnBlock)itemsReturnBlock{
+    Group *group = [Group findFirstByAttribute:GroupAttributes.groupID
+                                        withValue:groupId];
+
+    NSDictionary *paramsDict = @{
+                                 API_PARAMETER_KEY_ACTION           : API_PARAMETER_ACTION_VALUE_ITEMS_REQUEST,
+                                 API_PARAMETER_KEY_GROUP           : groupId
+                                 };
+
+    [[APIClient sharedClient] getPath:nil
+                                     parameters:paramsDict
+                                        success:^(AFHTTPRequestOperation *operation, id responseObject) {
+                                            NSArray *itemsArray = [dataManager itemsArrayForResponseObject:responseObject];
+                                            if (itemsArray) {
+                                                itemsReturnBlock(YES,lessonClassesArray,nil);
+                                            }else{
+                                                itemsReturnBlock(NO,nil,nil);
+                                            }
+                                        } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
+                                            itemsReturnBlock(NO,nil,error);
+                                        }];
+
+}
+</code></pre>
+
+<p>This allows me to mock the DataProcessingManager object and tell it what to return. Putting this all together, I now have a way of testing asynchronous API calls with test data and validating that my networking calls are doing the right thing in response to different scenarios. After this change, one of my tests against this networking call would look like this:</p>
+
+<pre><code class="objective-c APIClientTests.m">
+#import &lt;SenTestingKitAsync/SenTestingKitAsync.h&gt;
+#import &lt;OCMock/OCMock.h&gt;
+#import &lt;OHHTTPStubs/OHHTTPStubs.h&gt;
+
+-(void)testGetItemsRequestSuccessAsync{
+    [self setupStubsRequestForResponseName:@"items_request"];
+    id manager = [OCMockObject mockForClass:[DataProcessingManager class]];
+    NSArray *items = @[@1,@2];
+    [[[manager stub] andReturn:items] itemsArrayForResponseObject:OCMOCK_ANY];
+
+    [[SalesCoachAPIClient sharedClient] sendItemsRequestForGroupId:@1
+                                                              dataManager:@"ski081"
+                                                       completionBlock:^(BOOL success, NSArray *itemsArray, NSError *error) {
+                                                           STAssertTrue(success, nil);
+                                                           STAssertNil(error, nil);
+                                                           STAssertNotNil(itemsArray, nil);
+                                                           STAssertTrue(itemsArray.count == 2, nil);
+                                                           STSuccess();
+                                                       }];    
+}
+</code></pre>
+
+<p>I am making use of the following helper methods in my test class:</p>
+
+<pre><code class="objective-c APIClientTests.m">
+#pragma mark - Helper
+-(OHHTTPStubsResponse *)stubResponseForResponseNamed:(NSString *)responseName responseTime:(CGFloat)responseTime{
+    return [OHHTTPStubsResponse responseNamed:responseName
+                                   fromBundle:self.bundle
+                                 responseTime:responseTime];
+}
+
+-(void)setupStubsRequestForResponseName:(NSString *)responseName{
+    OHHTTPStubsResponse *response = [self stubResponseForResponseNamed:responseName
+                                                          responseTime:0.1f];
+    [OHHTTPStubs stubRequestsPassingTest:^BOOL(NSURLRequest *request) {
+        return YES;
+    } withStubResponse:^OHHTTPStubsResponse *(NSURLRequest *request) {
+        return response;
+    }];
+}
+</code></pre>
+
+<h3>Final note</h3>
+
+<p>To enable testing asynchronous calls, I relied heavilt on the excellent <a href="http://www.objc.io/issue-2/editorial.html">2nd issue</a> of <a href="http://www.objc.io">objc.io </a>. From that article, I was introduced to the <a href="https://github.com/AliSoftware/OHHTTPStubs">OHHTTPStubs</a>  and <a href="https://github.com/nxtbgthng/SenTestingKitAsync">SenTestingKitAsync</a> library.</p>
+
+<p>Some other libraries I am making use of here:
+- <a href="https://github.com/magicalpanda/MagicalRecord">MagicalRecord</a>
+- <a href="https://github.com/erikdoe/ocmock">OCMock</a></p>
+
+<p>This is a work in progress, but has been the best thing I&rsquo;ve been able to come up with so far. It definitely relieves some pain for me.</p>
+
+<p>Best of luck testing, and drop me a comment here with any additional tips/suggestions!</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Unit Testing Series]]></title>
+    <link href="http://markstruzinski.com/blog/2013/02/01/unit-testing-series/"/>
+    <updated>2013-02-01T16:31:00-05:00</updated>
+    <id>http://markstruzinski.com/blog/2013/02/01/unit-testing-series</id>
+    <content type="html"><![CDATA[<p>I have wanted to get better at unit testing and the tooling around it for some time. I usually start out determined to get a good amount of the code covered by unit tests, and to possibly get some UI tests built around user interactions. Unfortunately, deadlines intervene, and the tests get abandoned. With my most recent project, I decided to put all of these practices in place.</p>
+
+<!-- more -->
+
+
+<p>This is going to require learning as I go, and I intend to document my progress here for my own learning and hopefully to help anyone else who is researching the same thing.</p>
+
+<p>I intend to use the following technologies:</p>
+
+<ul>
+<li>Unit testing using standard the OCUnit/SenTest frameworks included with Xcode
+
+<ul>
+<li>I’ve flirted with other projects in the past, including <a href="https://github.com/allending/Kiwi">Kiwi</a> . I really like the syntax and organization that Kiwi provides, but I want to stick with the out of the box stuff for now</li>
+</ul>
+</li>
+<li>Integration/UI testing with <a href="http://testingwithfrank.com/">Frank</a>. I’ve got a fair amount of experience with Frank. I’ve also played with <a href="https://github.com/square/KIF">KIF</a>, and much prefer the separation and tooling that Frank provides</li>
+<li>Continuous Integration using <a href="http://jenkins-ci.org/">Jenkins</a></li>
+<li>Build versioning using a build script for automated version increments for release builds</li>
+</ul>
+
+
+<p>I’m going to try to document my thought process and all the steps I take along the way. Hopefully, I can get some constructive feedback on any improvements I can make.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Xcode File Template for Kiwi Tests]]></title>
+    <link href="http://markstruzinski.com/blog/2012/08/18/xcode-file-template-for-kiwi-tests/"/>
+    <updated>2012-08-18T16:47:00-04:00</updated>
+    <id>http://markstruzinski.com/blog/2012/08/18/xcode-file-template-for-kiwi-tests</id>
+    <content type="html"><![CDATA[<p>I started using <a href="https://github.com/allending/Kiwi" title="allending/Kiwi">Kiwi</a> to drive unit tests on my most recent project. Kiwi is an excellent <a href="http://en.wikipedia.org/wiki/Behavior-driven_development" title="Behavior-driven development - Wikipedia, the free encyclopedia">BDD (Behavior Driven Development)</a> framework that helps drive your code design by making test expectations very clear. It greatly increases the readability of your unit tests.</p>
+
+<!-- more -->
+
+
+<p>The Kiwi library only requires implementation files to write each spec (test). Per the <a href="https://github.com/allending/Kiwi" title="allending/Kiwi">documentation</a>, you follow these steps to create a spec:</p>
+
+<ol>
+<li>Create a .m file (no header required)</li>
+<li>Add an import for the Kiwi library <code>#import Kiwi.h</code></li>
+<li>Add the begin and end macros that expand at compile time to include the Kiwi code:
+
+<ol>
+<li><code>SPEC_BEGIN(SpecDescription)</code></li>
+<li><code>SPEC_END</code></li>
+</ol>
+</li>
+<li>Inside the <code>SPEC_BEGIN()</code> and <code>SPEC_END</code> macros, write your tests</li>
+</ol>
+
+
+<p>A typical Kiwi test follows this format:</p>
+
+<pre><code class="objective-c Kiwi Test">
+describe(@“when “testing math”, ^{
+    context(@"when adding 2 numbers", ^{
+        it(@"should return the correct value", ^{
+            int a = 1;
+            int b = 3;
+            int result = a + b;
+            [[theValue(result) should] equal:theValue(4)];
+        });
+    });
+});
+</code></pre>
+
+<p>Outside of the 4 lines of code that actually run the test condition, there is a lot of boilerplate code that has to be created to get up and running with a new test spec. I decided to take this opportunity to learn how to create a new Xcode file template.</p>
+
+<p>I found this excellent article on creating <a href="http://www.bobmccune.com/2012/03/04/creating-custom-xcode-4-file-templates/">custom Xcode file templates</a> by <a href="http://www.bobmccune.com">Bob McCune</a>. You can read the link for greater detail, but basically you can create custom templates that will be picked up by Xcode’s New File dialog by creating this directory <code>~/Library/Developer/Xcode/Templates/File Templates/</code> and then placing each of your custom templates inside a folder in that directory.</p>
+
+<p>I created one that accepts a spec name and the first test decription. It creates a shell that includes the Kiwi import statement, the required macros, and the framework for 1 description, context, and test. The description<sup id='fnref:1'><a href='#fn:1' rel='footnote'>1</a></sup> is filled in based on your input in the new file creation dialog. I’ve created a <a href="http://cl.ly/1w3i1H2p1h0z">downloadable zip</a> of the required files. You should just be able to drop this into the location specified above and be up and running.</p>
+
+<p>As soon as possible, I’ll also share this on GitHub.</p>
+
+<p><div class="footnotes">
+	<ol>
+		<li id='fn:1'><p><a href='#fnref:1' rev='footnote'>↩</a></p>
+</li>
+	</ol>
+</div>
+</p>
+]]></content>
+  </entry>
+  
+</feed>

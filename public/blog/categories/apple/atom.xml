@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: apple | Mark Struzinski]]></title>
+  <link href="http://markstruzinski.com/blog/categories/apple/atom.xml" rel="self"/>
+  <link href="http://markstruzinski.com/"/>
+  <updated>2014-11-16T19:37:40-05:00</updated>
+  <id>http://markstruzinski.com/</id>
+  <author>
+    <name><![CDATA[Mark Struzinski]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[Goodbye, Steve]]></title>
+    <link href="http://markstruzinski.com/blog/2011/10/06/goodbye-steve/"/>
+    <updated>2011-10-06T05:31:00-04:00</updated>
+    <id>http://markstruzinski.com/blog/2011/10/06/goodbye-steve</id>
+    <content type="html"><![CDATA[<p>I didn’t become an Apple user until a few years ago. I came to the platform out of curiosity. I bought myself a Macbook to start teaching myself how to code iOS apps. I quickly found myself amazed at the ingenuity and simplicity of the entire platform. It was the way everything tied together, and always seemed to work in the way you expected. The more I lived in the Apple world, the more impressed I became. In 3 years, I have gone from using Apple’s products as a hobby to a full time developer on their platform. For the first time in my life, I have questioned that someone actually pays me to work on this stuff. I guess if you ask yourself that question, you are doing the right thing with your life.</p>
+
+<!-- more -->
+
+
+<p>I was surprised and saddened to hear of Steve Jobs’ passing tonight. He truly made a difference in our world with sheer will and by questioning everything. His stamp is all over these products we all use every day for entertainment and for work. His drive and determination produced these incredible products and services which set the standard for excellence in technology.</p>
+
+<p>A quote out of the recent statement by President Obama on Steve Jobs’ passing struck me as particularly apt.</p>
+
+<p><blockquote><p>The world has lost a visionary. And there may be no greater tribute to Steve’s success than the fact that much of the world learned of his passing on a device he invented.</p><footer><strong>President Barak Obama</strong> <cite>Dedication</cite></footer></blockquote></p>
+
+<p>I was glad to hear he passed peacefully and with his family.</p>
+
+<p>Rest in peace, Steve. Our world is a little less without you in it.</p>
+]]></content>
+  </entry>
+  
+</feed>

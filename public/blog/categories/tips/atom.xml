@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: tips | Mark Struzinski]]></title>
+  <link href="http://markstruzinski.com/blog/categories/tips/atom.xml" rel="self"/>
+  <link href="http://markstruzinski.com/"/>
+  <updated>2014-11-16T19:37:40-05:00</updated>
+  <id>http://markstruzinski.com/</id>
+  <author>
+    <name><![CDATA[Mark Struzinski]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[Quick Wipe of iOS Simulator Using Alfred]]></title>
+    <link href="http://markstruzinski.com/blog/2012/05/02/quick-wipe-of-ios-simulator-using-alfred/"/>
+    <updated>2012-05-02T07:37:00-04:00</updated>
+    <id>http://markstruzinski.com/blog/2012/05/02/quick-wipe-of-ios-simulator-using-alfred</id>
+    <content type="html"><![CDATA[<p>When I am rapidly prototyping new features, I frequently need to blow out the entire app structure from the simulator and start fresh.</p>
+
+<p>To do this manually, I would follow the following steps.</p>
+
+<p>From Simulator (when simulator is open)*:
+1. Go to Menu Bar
+2. Click iOS Simulator
+3. Click Reset Content and Settings</p>
+
+<!-- more -->
+
+
+<h3>Benefits of this approach:</h3>
+
+<ul>
+<li>Easy to do/remember</li>
+<li>Blows out all settings and apps</li>
+</ul>
+
+
+<h3>Drawbacks to this approach</h3>
+
+<ul>
+<li>Destroys ALL content, including any general settings</li>
+<li>I frequently need to test something more complex, like uploading images. I will save images to the simulator by going to Safari on the simulator and saving images form the web for use in the simulator&rsquo;s photo library. Using the Reset Content option destroys all of this data and it has to be recreated.</li>
+<li>Simulator must already be running to reset settings</li>
+</ul>
+
+
+<h2>From Finder</h2>
+
+<ul>
+<li>Go to path: <strong>~/[user]/Library/Application\ Support/iPhone\ Simulator/[SDK Version]/Applications</strong></li>
+<li>Delete all folders in the Applications folder</li>
+</ul>
+
+
+<h3>Benefits of this approach</h3>
+
+<ul>
+<li>Deletes apps from simulator without wiping settings</li>
+</ul>
+
+
+<h3>Drawbacks to this approach</h3>
+
+<ul>
+<li>Very manual, even when you have a sidebar shortcut set up in the Finder</li>
+</ul>
+
+
+<h2>My solution: Alfred Simulator Wipe</h2>
+
+<p>I love the application <a href="http://www.alfredapp.com/">Alfred</a>. Alfred is an extremely useful app that started its life as an application launcher, and has evolved into a swiss army knife that is ultimately customizable and expandable. When I get on any Mac and hit <strong>⌘-space</strong> and see Spotlight instead of Alfred, I know my productivity will be less than normal. One of the best features of Alfred is the ability to create custom shell/Applescript extensions and run them from the app with a keyword (The devs just added the ability to pipe input into these scripts with v1.2, but I haven&rsquo;t had a chance to play with it yet). This is the technique I used to automate the majority of this simulator wipe process (You have to have purchased the PowerPack to take advantage of extensions). Here is how to create an Alfred extension to wipe your Simulator applications:</p>
+
+<ol>
+<li><a href="http://www.alfredapp.com/#download-alfred">Download Alfred</a></li>
+<li>Open Alfred Preferences (with Alfred open, hit <strong>⌘,</strong>)</li>
+<li>Click the &lsquo;+&rsquo; button at the bottom left of the window:
+<img src="/images/post_images/wipe-sim-apps.png"></li>
+<li>Select AppleScript</li>
+<li>Enter an Extension Name. Other details are optional.</li>
+<li>To make it look nice in Alfred, you can drag in an icon that will be displayed in the app when the keyword is invoked</li>
+<li>Enter a title and description</li>
+<li>Pick a keyword that Alfred will use to launch the script</li>
+<li>Check the <strong>Background</strong> box (This allows the script to run and not block Alfred until it completes)</li>
+<li>Use the following code in the AppleScript field:
+<code>applescript Alfred AppleScript
+tell application &amp;ldquo;Finder&amp;rdquo;
+delete (every item of folder &amp;ldquo;[Drive]:Users:[user]:Library:Application Support:iPhone Simulator:5.1:Applications&amp;rdquo;)
+end tell
+</code></li>
+<li>The iOS simulator uses a separate directory for each installed SDK. For each iOS SDK on your system (I have 3), add a new line to delete that Simulator&rsquo;s installed apps. You would simply copy the delete line above and change [5.1] to a different folder name.</li>
+<li>Click the Save button when you&rsquo;re done</li>
+<li>Invoke Alfred, then type in the keyword you set up to run the extension</li>
+<li>You should wind up with something like you see below
+<img src="/images/post_images/alfred-wipe-in-action.png"></li>
+</ol>
+
+
+<p>This will easily wipe out your simulator apps without destroying any data in the simulator itself. It&rsquo;s also a lot easier than going through the Finder every time. I&rsquo;m linking to an export of the extension below. Please let me know in the comments if you are doing anything similar or you can think of any improvements!</p>
+
+<p><a href="http://cl.ly/0w300M1W2B253P412n08">Alfred Simulator Wipe Extension</a></p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Quick Xcode 4 Tip: Deleting Derived Data to Rescue Code Completion]]></title>
+    <link href="http://markstruzinski.com/blog/2011/09/30/quick-xcode-4-tip-deleting-derived-data-to-rescue-code-completion/"/>
+    <updated>2011-09-30T07:50:00-04:00</updated>
+    <id>http://markstruzinski.com/blog/2011/09/30/quick-xcode-4-tip-deleting-derived-data-to-rescue-code-completion</id>
+    <content type="html"><![CDATA[<h2>Quick Tip:</h2>
+
+<p>I had an issue on a very large project in XCode. Starting 2 days ago, all of my syntax highlighting was completely broken. This is bad, but even worse, my code completion worked only partially. I was getting autocomplete for local variables only. When calling framework methods with a lot of parameters, I rely pretty heavily on code completion. I tried all of the usual fixes.</p>
+
+<!-- more -->
+
+
+<p>This includes:
+- Doing a <strong>Project Clean (⌘⇧K)</strong>
+- Doing a <strong>Clean Build Folder(⌥⌘⇧K)</strong>
+- Restarting XCode</p>
+
+<p>None of these solutions fixed the issue. After some digging, I came across <a href="http://stackoverflow.com/questions/5365212/xcode-4-code-loses-syntax-coloring-when-importing-project-from-xcode-3/5368489#5368489">this StackOverflow Post</a> which pointed me in the right direction. Seems like sometimes the project index, which contains metadata used to display code completion suggestions (among other things), can become corrupted. The solution is to delete it. This will force XCode to regenerate it, which rebuilds the index.</p>
+
+<p>Here are the steps to delete your Derived Data folder:</p>
+
+<ol>
+<li>Go to XCode Settings <strong>(⌘,)</strong></li>
+<li>Click the Locations tab. You will see a screen like this:
+<img src="images/post_images/xcode-derived-data.png"></li>
+<li>Click the small arrow next to the location of the Derived Data folder. This will open the Finder to the location of the Derived Data for any XCode projects you currently have on your Mac.</li>
+<li>Find the one that starts with the name of your current project and delete it.</li>
+<li>You should immediately see XCode start to re-index your project.</li>
+</ol>
+
+
+<p>For me, after this process completed, I got all of my functionality back. Your mileage may vary, and please make sure you back everything up before deleting anything!</p>
+]]></content>
+  </entry>
+  
+</feed>

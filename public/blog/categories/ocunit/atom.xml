@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: ocunit | Mark Struzinski]]></title>
+  <link href="http://markstruzinski.com/blog/categories/ocunit/atom.xml" rel="self"/>
+  <link href="http://markstruzinski.com/"/>
+  <updated>2014-11-16T19:37:40-05:00</updated>
+  <id>http://markstruzinski.com/</id>
+  <author>
+    <name><![CDATA[Mark Struzinski]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[Unit Testing Series]]></title>
+    <link href="http://markstruzinski.com/blog/2013/02/01/unit-testing-series/"/>
+    <updated>2013-02-01T16:31:00-05:00</updated>
+    <id>http://markstruzinski.com/blog/2013/02/01/unit-testing-series</id>
+    <content type="html"><![CDATA[<p>I have wanted to get better at unit testing and the tooling around it for some time. I usually start out determined to get a good amount of the code covered by unit tests, and to possibly get some UI tests built around user interactions. Unfortunately, deadlines intervene, and the tests get abandoned. With my most recent project, I decided to put all of these practices in place.</p>
+
+<!-- more -->
+
+
+<p>This is going to require learning as I go, and I intend to document my progress here for my own learning and hopefully to help anyone else who is researching the same thing.</p>
+
+<p>I intend to use the following technologies:</p>
+
+<ul>
+<li>Unit testing using standard the OCUnit/SenTest frameworks included with Xcode
+
+<ul>
+<li>I’ve flirted with other projects in the past, including <a href="https://github.com/allending/Kiwi">Kiwi</a> . I really like the syntax and organization that Kiwi provides, but I want to stick with the out of the box stuff for now</li>
+</ul>
+</li>
+<li>Integration/UI testing with <a href="http://testingwithfrank.com/">Frank</a>. I’ve got a fair amount of experience with Frank. I’ve also played with <a href="https://github.com/square/KIF">KIF</a>, and much prefer the separation and tooling that Frank provides</li>
+<li>Continuous Integration using <a href="http://jenkins-ci.org/">Jenkins</a></li>
+<li>Build versioning using a build script for automated version increments for release builds</li>
+</ul>
+
+
+<p>I’m going to try to document my thought process and all the steps I take along the way. Hopefully, I can get some constructive feedback on any improvements I can make.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[OCUnit - Script to Kill Simulator After Tests Run]]></title>
+    <link href="http://markstruzinski.com/blog/2012/10/10/ocunit-script-to-kill-simulator-after-tests-run/"/>
+    <updated>2012-10-10T09:55:00-04:00</updated>
+    <id>http://markstruzinski.com/blog/2012/10/10/ocunit-script-to-kill-simulator-after-tests-run</id>
+    <content type="html"><![CDATA[<p>I’m in the process of adding OCUnit tests to an existing iOS code base. Throughout this process, the biggest pain point I have encountered has been the simulator taking over the screen after an application test suite has run.</p>
+
+<!-- more -->
+
+
+<p>This behavior completely breaks the flow of red/green/refactor, especially when you are on a roll. Here is a typical round trip for me when testing using the default behavior:</p>
+
+<ol>
+<li>Make a code change</li>
+<li>Hit <strong>⌘U</strong> to run the test suite</li>
+<li>Simulator appears and takes over the screen</li>
+<li>Tests complete in Xcode, which is now behind the simulator</li>
+<li><strong>⌘ + Tab</strong> back to Xcode to check the results, or <strong>⌘ + Tab</strong> to the simulator, then <strong>⌘ + Q</strong> to quit it</li>
+</ol>
+
+
+<p>I solved this problem by running a script to close the simulator. To automate this, I hooked into Xcode’s behaviors functionality. Using behaviors, you can specify actions to run before and after testing runs.</p>
+
+<p>Here is a breakdown of how I am now forcing the simulator to close when tests complete:</p>
+
+<ul>
+<li>Open a text file and add the following shell script
+<figure class='code'><figcaption><span>Close Simulator Script</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>&lt;h1&gt;!/bin/sh&lt;/h1&gt;
+</span><span class='line'>
+</span><span class='line'>&lt;p&gt;osascript -e <span class="p">&amp;</span>lsquo<span class="p">;</span>tell app <span class="p">&amp;</span>ldquo<span class="p">;</span>iPhone Simulator<span class="p">&amp;</span>rdquo<span class="p">;</span> to quit<span class="p">&amp;</span>rsquo<span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure></p></li>
+<li>Create a folder at the base level of your project named Scripts</li>
+<li>Save the text file into this folder and name it <strong>quitsim.sh</strong></li>
+<li>Open a terminal session, cd to the new Scripts folder, and run the following command on the file to make it executable:</li>
+</ul>
+
+
+<pre><code class="bash Make file executable">
+chmod +x quitsim.sh
+</code></pre>
+
+<ul>
+<li>Now, open Xcode, and go to preferences(⌘,)</li>
+<li>Go to the Behaviors tab</li>
+<li>Under the Testing category, select Succeeds</li>
+<li>Scroll to the bottom, and check the Run selection</li>
+<li>Select <strong>Choose Script &hellip;</strong> from the pull down menu</li>
+<li>Select the script you just saved into the Scripts folder</li>
+<li>Repeat this process for the Fails selection in the Testing category</li>
+</ul>
+
+
+<p>You should now be able to run your test suite and have the simulator close upon completion or failure. This has removed a consistent annoyance for me and sped up my workflow just a little bit.</p>
+
+<p>Every small improvement helps.</p>
+]]></content>
+  </entry>
+  
+</feed>

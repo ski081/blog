@@ -1,0 +1,63 @@
+
+<!DOCTYPE HTML>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Thoughts on software development and technology  | Mark Struzinski</title>
+
+	<meta name="author" content="Mark Struzinski"> 
+	
+	<meta name="description" content="Search Results "> <meta name="keywords" content="">
+
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+	<link href="http://feedpress.me/markstruzinski" rel="alternate" title="Mark Struzinski" type="application/atom+xml">
+	<link rel="canonical" href="">
+	<link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+	<link href="/stylesheets/font-awesome.min.css" rel="stylesheet" type="text/css">
+	
+	<!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+	
+</head>
+
+
+
+<body>
+	<header id="header" class="inner"><h1>Mark Struzinski</h1>
+<nav id="main-nav"><ul>
+	<li><a href="/">Blog</a></li>
+	<li><a href="/archives">Archive</a></li>
+	<li><a href="/about">About</a></li>
+    <li><a href="/portfolio">Portfolio</a></li>
+</ul>
+</nav>
+
+
+</header>
+
+	<div id="content" class="inner"><h1 class="entry-title"><center>Search Results</center></h1>
+<div id="search_loading" style="margin: 40px 0">
+    <center><img src="/images/loading.gif"></center>
+</div>
+
+<script type="text/javascript" src="/javascripts/jquery-tapir.js"></script>
+<div id="search_results" style="display:none">
+<br>
+</div>
+<script>
+         $('#search_results').tapir({
+             'token': '',
+             'complete' : function() { document.getElementById('search_loading').style.display="none"; }
+         });
+</script>
+
+</div>
+	<footer id="footer" class="inner">Copyright &copy; 2014
+ Mark Struzinski 
+<br>
+Powered by Octopress.
+</footer>
+	
+
+</body>
+</html>

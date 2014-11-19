@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: keyboard maestro | Mark Struzinski]]></title>
+  <link href="http://markstruzinski.com/blog/categories/keyboard-maestro/atom.xml" rel="self"/>
+  <link href="http://markstruzinski.com/"/>
+  <updated>2014-11-16T19:37:40-05:00</updated>
+  <id>http://markstruzinski.com/</id>
+  <author>
+    <name><![CDATA[Mark Struzinski]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[Keyboard Maestro macro to open in browser from ReadKit]]></title>
+    <link href="http://markstruzinski.com/blog/2013/01/16/keyboard-maestro-macro-to-open-in-browser-from-readkit/"/>
+    <updated>2013-01-16T12:48:00-05:00</updated>
+    <id>http://markstruzinski.com/blog/2013/01/16/keyboard-maestro-macro-to-open-in-browser-from-readkit</id>
+    <content type="html"><![CDATA[<p>I recently switched to <a href="http://www2.ed.gov/pubs/CompactforReading/index.html">ReadKit</a> for reading <a href="https://www.instapaper.com/">Instapaper</a> articles on my mac. I switched over from Read Later (no longer available). Read Later was my app of choice for a long time, but it is no longer in active development. The team was hired by <a href="http://www.pocketmac.com/">Pocket</a>, and they are working solely on the mac app now. Read Later was good, but some much needed updates were never implemented. The display for articles was frequently skewed, and the app had started to crash a lot.</p>
+
+<!-- more -->
+
+
+<p>ReadKit’s display of articles is much smoother, and the overall look and feel is fresh and crisp. One thing I do miss from Read Later is the keyboard shortcuts. I frequently need to open articles in a browser quickly. Whenever I am viewing an article that has code examples in it, the formatting is always chancy at best. Sometimes the code displays great. Other times it is truncated or not present at all. The only way I can be sure I am seeing the full article is to open it in a browser.</p>
+
+<p>In Read Later, I was simply able to hit the Return <strong>(↩)</strong> key and the selected article would open in my default browser. This shortcut is not present in ReadKit. You can either hit <strong>V</strong> to view the original article within ReadKit, or hit <strong>B</strong> to view the article in its current form in your default browser. The problem here is that if you are currently viewing the Instapaper version of the article, it opens on Instapaper’s website in its stripped down format rather than opening to the native URL. So I would have to hit <strong>V</strong> then <strong>B</strong> on every article that I wanted to view in Safari.</p>
+
+<p>I know this is a small problem and just one extra keystroke, but it was annoying me. So, I created a new Keyboard Maestro group that is only active from within ReadKit. From there, whenever I hit <strong>⌘ + ↩</strong>, it opens the article right in the default browser.</p>
+
+<p>Irritation solved! Below is a screenshot of the macro in case you are interested. It is very simple, but it fixed my issue.</p>
+
+<p><img src="/images/post_images/2013/01/readkit_km_open_in_browser.png" alt="KM Macro" /></p>
+
+<p><img class="fancybox" src="/images/post_images/2013/01/readkit_km_open_in_browser.png"></p>
+]]></content>
+  </entry>
+  
+</feed>

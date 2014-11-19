@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: backup | Mark Struzinski]]></title>
+  <link href="http://markstruzinski.com/blog/categories/backup/atom.xml" rel="self"/>
+  <link href="http://markstruzinski.com/"/>
+  <updated>2014-11-16T19:37:40-05:00</updated>
+  <id>http://markstruzinski.com/</id>
+  <author>
+    <name><![CDATA[Mark Struzinski]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[BackBlaze, MDS Worker, and Spotlight]]></title>
+    <link href="http://markstruzinski.com/blog/2011/08/08/backblaze/"/>
+    <updated>2011-08-08T22:56:00-04:00</updated>
+    <id>http://markstruzinski.com/blog/2011/08/08/backblaze</id>
+    <content type="html"><![CDATA[<p>I recently began experiencing my system fans kicking in and running all the time. The fans began running so much that I almost didn&rsquo;t notice them any more. When I pulled the Activity Monitor up, the <a href="http://osxdaily.com/2009/09/14/mdworker-what-is-mdworker/">md worker</a> was using over 100% of my system resources consistently.</p>
+
+<p>After looking up what md worker does, it appears to be a process spun off by spotlight to index your drive for quick searching. Even after a reboot, the fans would kick back in after a short idle time of maybe a minute. This process was seriously heating up the mac.</p>
+
+<!-- more -->
+
+
+<p>After doing some more research, I found this [excellent question and answer][superuserqa] from the [SuperUser][<a href="http://superuser.com/">http://superuser.com/</a>] site. I ran the following command in the terminal to log what Spotlight was trying on index at the time.</p>
+
+<pre><code class="bash fs_usage">sudo fs_usage -w -f filesys mdworker
+</code></pre>
+
+<p>The terminal showed the last file to be indexed was in the <strong>/Library/BackBlaze/bzdata</strong> folder. This was not Library in <strong>~/Users</strong>, but the one at the base of the volume. It was indexing this file over and over. My initial thought was that the system was hung on the file. A google search turned up <a href="http://www.backblaze.com/help-mac.html#filevault">this result</a> on the BackBlaze support page. BackBlaze frequently writes log data to a file. All files in the BackBlaze folder should be added to the Privacy Exclusions so that Spotlight will not attempt to index them. According to the support article, this exclusion should be added when BackBlaze is installed. Since the Lion version for BackBlaze was very recently released, this may be a bug in the BackBlaze installer.</p>
+
+<p><img src="/images/post_images/help-mac-spotlight.jpg"></p>
+
+<p>In my case, the folder had not been added.</p>
+
+<p>After adding the BackBlaze folder to the Spotlight Privacy exclusions, the problem disappeared at once. Good job on BackBlaze for having an excellent support document.</p>
+
+<p>UPDATE: I recently had to replace my hard drive and decided to do a fresh install rather than pulling over my <a href="http://www.bombich.com">Carbon Copy Cloner</a> backup. I experienced the exact same problem, and had to follow the process outlined above to fix it. This issue hasn&rsquo;t been resolved in the BackBlaze installer as of yet.</p>
+]]></content>
+  </entry>
+  
+</feed>

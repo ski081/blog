@@ -1,0 +1,141 @@
+
+<!DOCTYPE HTML>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Xcode File Template for Kiwi Tests  | Mark Struzinski</title>
+
+	<meta name="author" content="Mark Struzinski"> 
+	
+	<meta name="description" content="I started using Kiwi to drive unit tests on my most recent project. Kiwi is an excellent BDD (Behavior Driven Development) framework that helps drive &hellip;"> <meta name="keywords" content="">
+
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+	<link href="http://feedpress.me/markstruzinski" rel="alternate" title="Mark Struzinski" type="application/atom+xml">
+	<link rel="canonical" href="">
+	<link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+	<link href="/stylesheets/font-awesome.min.css" rel="stylesheet" type="text/css">
+	
+	<!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+	
+</head>
+
+
+
+<body>
+	<header id="header" class="inner"><h1>Mark Struzinski</h1>
+<nav id="main-nav"><ul>
+	<li><a href="/">Blog</a></li>
+	<li><a href="/archives">Archive</a></li>
+	<li><a href="/about">About</a></li>
+    <li><a href="/portfolio">Portfolio</a></li>
+</ul>
+</nav>
+
+
+</header>
+
+	<div id="content" class="inner"><article class="post">
+	<h2 class="title">Xcode File Template for Kiwi Tests</h2>
+	<div class="entry-content"><p>I started using <a href="https://github.com/allending/Kiwi" title="allending/Kiwi">Kiwi</a> to drive unit tests on my most recent project. Kiwi is an excellent <a href="http://en.wikipedia.org/wiki/Behavior-driven_development" title="Behavior-driven development - Wikipedia, the free encyclopedia">BDD (Behavior Driven Development)</a> framework that helps drive your code design by making test expectations very clear. It greatly increases the readability of your unit tests.</p>
+
+<!-- more -->
+
+
+<p>The Kiwi library only requires implementation files to write each spec (test). Per the <a href="https://github.com/allending/Kiwi" title="allending/Kiwi">documentation</a>, you follow these steps to create a spec:</p>
+
+<ol>
+<li>Create a .m file (no header required)</li>
+<li>Add an import for the Kiwi library <code>#import Kiwi.h</code></li>
+<li>Add the begin and end macros that expand at compile time to include the Kiwi code:
+
+<ol>
+<li><code>SPEC_BEGIN(SpecDescription)</code></li>
+<li><code>SPEC_END</code></li>
+</ol>
+</li>
+<li>Inside the <code>SPEC_BEGIN()</code> and <code>SPEC_END</code> macros, write your tests</li>
+</ol>
+
+
+<p>A typical Kiwi test follows this format:</p>
+
+<figure class='code'><figcaption><span>Kiwi Test</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class='objective-c'><span class='line'><span class="n">describe</span><span class="p">(@</span><span class="err">“</span><span class="n">when</span> <span class="err">“</span><span class="n">testing</span> <span class="n">math</span><span class="err">”</span><span class="p">,</span> <span class="o">^</span><span class="p">{</span>
+</span><span class='line'>    <span class="n">context</span><span class="p">(</span><span class="s">@&quot;when adding 2 numbers&quot;</span><span class="p">,</span> <span class="o">^</span><span class="p">{</span>
+</span><span class='line'>        <span class="n">it</span><span class="p">(</span><span class="s">@&quot;should return the correct value&quot;</span><span class="p">,</span> <span class="o">^</span><span class="p">{</span>
+</span><span class='line'>            <span class="kt">int</span> <span class="n">a</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+</span><span class='line'>            <span class="kt">int</span> <span class="n">b</span> <span class="o">=</span> <span class="mi">3</span><span class="p">;</span>
+</span><span class='line'>            <span class="kt">int</span> <span class="n">result</span> <span class="o">=</span> <span class="n">a</span> <span class="o">+</span> <span class="n">b</span><span class="p">;</span>
+</span><span class='line'>            <span class="p">[[</span><span class="n">theValue</span><span class="p">(</span><span class="n">result</span><span class="p">)</span> <span class="n">should</span><span class="p">]</span> <span class="nl">equal</span><span class="p">:</span><span class="n">theValue</span><span class="p">(</span><span class="mi">4</span><span class="p">)];</span>
+</span><span class='line'>        <span class="p">});</span>
+</span><span class='line'>    <span class="p">});</span>
+</span><span class='line'><span class="p">});</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Outside of the 4 lines of code that actually run the test condition, there is a lot of boilerplate code that has to be created to get up and running with a new test spec. I decided to take this opportunity to learn how to create a new Xcode file template.</p>
+
+<p>I found this excellent article on creating <a href="http://www.bobmccune.com/2012/03/04/creating-custom-xcode-4-file-templates/">custom Xcode file templates</a> by <a href="http://www.bobmccune.com">Bob McCune</a>. You can read the link for greater detail, but basically you can create custom templates that will be picked up by Xcode’s New File dialog by creating this directory <code>~/Library/Developer/Xcode/Templates/File Templates/</code> and then placing each of your custom templates inside a folder in that directory.</p>
+
+<p>I created one that accepts a spec name and the first test decription. It creates a shell that includes the Kiwi import statement, the required macros, and the framework for 1 description, context, and test. The description<sup id='fnref:1'><a href='#fn:1' rel='footnote'>1</a></sup> is filled in based on your input in the new file creation dialog. I’ve created a <a href="http://cl.ly/1w3i1H2p1h0z">downloadable zip</a> of the required files. You should just be able to drop this into the location specified above and be up and running.</p>
+
+<p>As soon as possible, I’ll also share this on GitHub.</p>
+
+<div class="footnotes">
+    <ol>
+        <li id='fn:1'><p><a href='#fnref:1' rev='footnote'>↩</a></p>
+</li>
+    </ol>
+</div>
+
+
+
+</div>
+
+
+<div class="meta">
+	<div class="date">
+
+
+
+
+
+
+
+
+  
+
+
+
+<time datetime="2012-08-18T16:47:00-04:00" pubdate data-updated="true">Aug 18th, 2012</time></div>
+	
+
+<div class="tags">
+
+	<a class='category' href='/blog/categories/kiwi/'>kiwi</a>, <a class='category' href='/blog/categories/unit-testing/'>unit testing</a>, <a class='category' href='/blog/categories/xcode/'>xcode</a>
+
+</div>
+
+
+</div>
+</article>
+</div>
+	<footer id="footer" class="inner">Copyright &copy; 2014
+ Mark Struzinski 
+<br>
+Powered by Octopress.
+</footer>
+	
+
+</body>
+</html>

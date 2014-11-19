@@ -1,0 +1,146 @@
+
+<!DOCTYPE HTML>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Persisting Simple Data Using the Plist Format: Part 1/1  | Mark Struzinski</title>
+
+	<meta name="author" content="Mark Struzinski"> 
+	
+	<meta name="description" content="Recently, we had the need to save some simple transient data to disk. For data of any significant size, we would have looked at Core Data for our &hellip;"> <meta name="keywords" content="">
+
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+	<link href="http://feedpress.me/markstruzinski" rel="alternate" title="Mark Struzinski" type="application/atom+xml">
+	<link rel="canonical" href="">
+	<link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+	<link href="/stylesheets/font-awesome.min.css" rel="stylesheet" type="text/css">
+	
+	<!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+	
+</head>
+
+
+
+<body>
+	<header id="header" class="inner"><h1>Mark Struzinski</h1>
+<nav id="main-nav"><ul>
+	<li><a href="/">Blog</a></li>
+	<li><a href="/archives">Archive</a></li>
+	<li><a href="/about">About</a></li>
+    <li><a href="/portfolio">Portfolio</a></li>
+</ul>
+</nav>
+
+
+</header>
+
+	<div id="content" class="inner"><article class="post">
+	<h2 class="title">Persisting Simple Data Using the Plist Format: Part 1/1</h2>
+	<div class="entry-content"><p>Recently, we had the need to save some simple transient data to disk. For data of any significant size, we would have looked at Core Data for our persistence. In this case, we decided to use the PList format to save data to disk and pull it back off. We went through several ideas to store this data.</p>
+
+<p>Some of the ideas we considered for persistence included:</p>
+
+<ul>
+<li>Core Data</li>
+<li>JSON saved in a flat file format</li>
+<li>PList saved directly to disk from a Cocoa object such as an NSArray or NSDictionary</li>
+</ul>
+
+
+<!-- more -->
+
+
+<p>Because of our specific set of requirements and our hardware stack, we opted to go with the PList format. Our main driver for this decision was the amount of control we have over the response format from the server. Since we control our servers and their output, we are able to specify PList as a return type. We use the excellent <a href="https://github.com/AFNetworking/AFNetworking">AFNetworking</a> library to perform our networking tasks.</p>
+
+<p>The AFNetworking library has a request named <a href="http://engineering.gowalla.com/AFNetworking/Classes/AFPropertyListRequestOperation.html">AFPropertyListRequestOperation</a>.<sup id='fnref:1'><a href='#fn:1' rel='footnote'>1</a></sup> This operation will take an NSURLRequest and return an <code>id</code> that can be cast to a native Cocoa object, such as an NSDictionary or NSArray. Because we know the object’s return structure, we directly cast our object and move on to processing it. From there, it is just a matter of using the <code>writeToFile:Atomically</code> method to persist to disk.</p>
+
+<p>Here is an example workflow:</p>
+
+<figure class='code'><figcaption><span>Save PList</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+</pre></td><td class='code'><pre><code class='objective-c'><span class='line'><span class="bp">NSString</span> <span class="o">*</span><span class="n">urlString</span> <span class="o">=</span> <span class="s">@&quot;http://api.responder?format=plist;&quot;</span>
+</span><span class='line'><span class="bp">NSURLRequest</span> <span class="o">*</span><span class="n">urlRequest</span> <span class="o">=</span> <span class="p">[</span><span class="bp">NSURLRequest</span> <span class="nl">requestWithURL</span><span class="p">:[</span><span class="bp">NSURL</span> <span class="nl">urlWithString</span><span class="p">:</span><span class="n">urlString</span><span class="p">]];</span>
+</span><span class='line'>    <span class="n">AFPropertyListRequestOperation</span> <span class="o">*</span><span class="n">operation</span> <span class="o">=</span>
+</span><span class='line'>    <span class="p">[</span><span class="n">AFPropertyListRequestOperation</span> <span class="nl">propertyListRequestOperationWithRequest</span><span class="p">:</span><span class="n">urlString</span> <span class="nl">success</span><span class="p">:</span><span class="o">^</span><span class="p">(</span><span class="bp">NSURLRequest</span> <span class="o">*</span><span class="n">request</span><span class="p">,</span> <span class="bp">NSHTTPURLResponse</span> <span class="o">*</span><span class="n">response</span><span class="p">,</span> <span class="kt">id</span> <span class="n">propertyList</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="c1">// Cache the response</span>
+</span><span class='line'>        <span class="bp">NSDictionary</span> <span class="o">*</span><span class="n">responseDict</span> <span class="o">=</span> <span class="p">(</span><span class="bp">NSDictionary</span> <span class="o">*</span><span class="p">)</span><span class="n">propertyList</span><span class="p">;</span>
+</span><span class='line'>        <span class="bp">NSArray</span> <span class="o">*</span><span class="n">pathArray</span> <span class="o">=</span> <span class="n">NSSearchPathForDirectoriesInDomains</span><span class="p">(</span><span class="n">NSCachesDirectory</span><span class="p">,</span> <span class="n">NSUserDomainMask</span><span class="p">,</span> <span class="nb">YES</span><span class="p">);</span>
+</span><span class='line'>        <span class="bp">NSString</span> <span class="o">*</span><span class="n">cachesPath</span> <span class="o">=</span> <span class="p">[</span><span class="n">pathArray</span> <span class="n">lastObject</span><span class="p">];</span>
+</span><span class='line'>        <span class="bp">NSString</span> <span class="o">*</span><span class="n">filePath</span> <span class="o">=</span> <span class="p">[</span><span class="bp">NSString</span> <span class="nl">pathWithComponents</span><span class="p">:[</span><span class="bp">NSArray</span> <span class="nl">arrayWithObjects</span><span class="p">:</span><span class="n">cachesPath</span><span class="p">,@</span><span class="o">&amp;</span><span class="n">quot</span><span class="p">;</span><span class="n">responseDict</span><span class="p">.</span><span class="n">plist</span><span class="o">&amp;</span><span class="n">quot</span><span class="p">;,</span><span class="nb">nil</span><span class="p">]];</span>
+</span><span class='line'>        <span class="kt">BOOL</span> <span class="n">success</span> <span class="o">=</span> <span class="p">[</span><span class="n">responseDict</span> <span class="nl">writeToFile</span><span class="p">:</span><span class="n">filePath</span> <span class="nl">atomically</span><span class="p">:</span><span class="nb">YES</span><span class="p">];</span>
+</span><span class='line'>        <span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="n">success</span><span class="p">){</span>
+</span><span class='line'>            <span class="c1">// Handle error</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>    <span class="p">}</span> <span class="nl">failure</span><span class="p">:</span><span class="o">^</span><span class="p">(</span><span class="bp">NSURLRequest</span> <span class="o">*</span><span class="n">request</span><span class="p">,</span> <span class="bp">NSHTTPURLResponse</span> <span class="o">*</span><span class="n">response</span><span class="p">,</span> <span class="bp">NSError</span> <span class="o">*</span><span class="n">error</span><span class="p">,</span> <span class="kt">id</span> <span class="n">propertyList</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">NSLog</span><span class="p">(@</span><span class="o">&amp;</span><span class="n">quot</span><span class="p">;</span><span class="n">API</span> <span class="n">Call</span> <span class="nl">failure</span><span class="p">:</span> <span class="o">%</span><span class="p">@</span><span class="o">&amp;</span><span class="n">quot</span><span class="p">;,[</span><span class="n">error</span> <span class="n">localizedDescription</span><span class="p">]);</span>
+</span><span class='line'>    <span class="p">}];</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>One caveat here is to be careful that your dictionary is properly formatted when being returned from the server, and when attempting to save to disk. Initially, we had some bugs when nulls were encountered as a response from the server for specific values. The server parsing logic would simply not generate a value for the key if the value was null. In PList format, this is unacceptable syntax. If you tried to save this to disk, the call would fail and return NO from the <code>writeToFile: method</code>.</p>
+
+<p>For my next post, I’ll do a quick follow up on how to pull the data back off of disk and get it into a usable format in memory.</p>
+
+<div class="footnotes">
+    <ol>
+        <li id='fn:1'><p><a href='#fnref:1' rev='footnote'>↩</a></p>
+</li>
+    </ol>
+</div>
+
+
+
+</div>
+
+
+<div class="meta">
+	<div class="date">
+
+
+
+
+
+
+
+
+  
+
+
+
+<time datetime="2012-02-03T04:16:00-05:00" pubdate data-updated="true">Feb 3rd, 2012</time></div>
+	
+
+<div class="tags">
+
+	<a class='category' href='/blog/categories/cocoa/'>cocoa</a>, <a class='category' href='/blog/categories/persistence/'>persistence</a>, <a class='category' href='/blog/categories/plist/'>plist</a>
+
+</div>
+
+
+</div>
+</article>
+</div>
+	<footer id="footer" class="inner">Copyright &copy; 2014
+ Mark Struzinski 
+<br>
+Powered by Octopress.
+</footer>
+	
+
+</body>
+</html>

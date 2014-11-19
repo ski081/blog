@@ -1,0 +1,696 @@
+
+<!DOCTYPE HTML>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Using NSXMLParser  | Mark Struzinski</title>
+
+	<meta name="author" content="Mark Struzinski"> 
+	
+	<meta name="description" content="This is my first stab at an iPhone project. I&rsquo;m writing an app that consumes an RSS feed and parses it to retrieve a few bits of information &hellip;"> <meta name="keywords" content="">
+
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+	<link href="http://feedpress.me/markstruzinski" rel="alternate" title="Mark Struzinski" type="application/atom+xml">
+	<link rel="canonical" href="">
+	<link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+	<link href="/stylesheets/font-awesome.min.css" rel="stylesheet" type="text/css">
+	
+	<!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+	
+</head>
+
+
+
+<body>
+	<header id="header" class="inner"><h1>Mark Struzinski</h1>
+<nav id="main-nav"><ul>
+	<li><a href="/">Blog</a></li>
+	<li><a href="/archives">Archive</a></li>
+	<li><a href="/about">About</a></li>
+    <li><a href="/portfolio">Portfolio</a></li>
+</ul>
+</nav>
+
+
+</header>
+
+	<div id="content" class="inner"><article class="post">
+	<h2 class="title">Using NSXMLParser</h2>
+	<div class="entry-content"><p>This is my first stab at an iPhone project. I&rsquo;m writing an app that consumes an RSS feed and parses it to retrieve a few bits of information for display on the screen. This is my first attempt at an implementation. Coming from a .NET background, it is quite a paradigm shift when switching to the heavily convention based world of Cocoa    development.</p>
+
+<p>If I was writing this app in .NET, I&rsquo;d go out looking for the proper class libraries to parse the XML and begin framing out a class to perform all the functions I needed to populate an object to be   persisted to the UI.</p>
+
+<!-- more -->
+
+
+<p>When researching the best way to do this, I found 2 prevalent methods of parsing XML in Cocoa:</p>
+
+<ul>
+<li><a href="https://developer.apple.com/library/mac/#documentation/Cocoa/Reference/Foundation/Classes/NSXMLParser_Class/Reference/Reference.html">NSXMLParser</a></li>
+<li><a href="https://github.com/TouchCode/TouchXML">Touch XML</a></li>
+</ul>
+
+
+<p>I decided to go with NSXMLParser because it seemed like the path of least friction to get started with. NSXMLParser is a stream based reader. It basically reads the entire XML tree character by character and fires off events via delegate calls when it encounters useful information. I found this model very easy to use. After some trial and error, I&rsquo;ve got it working well for my current project.</p>
+
+<p>I am parsing the xml feed for <a href="www.woot.com/salerss.aspx">Woot.com</a>. The following is an abbreviated snippet of the elements I am interested in. The actual feed has a lot more info in it, but this should give you a feel for the structure:</p>
+
+<figure class='code'><figcaption><span>API Return Data</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+</pre></td><td class='code'><pre><code class='xml'><span class='line'><span class="nt">&lt;channel&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;copyright</span> <span class="nt">/&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;description&gt;</span>Woot! - One Day, One Deal<span class="nt">&lt;/description&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;docs&gt;</span>http://www.rssboard.org/rss-specification<span class="nt">&lt;/docs&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;generator&gt;</span>Oppositional.Syndication, 1.0.0.0, http:// www.oppositionallydefiant.com/<span class="nt">&lt;/generator&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;item&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;description&gt;</span>[Removed for brevity]<span class="nt">&lt;/description&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;link&gt;</span>http://www.woot.com/<span class="nt">&lt;/link&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;title&gt;</span>Dyson DC24 Blueprint Limited Edition<span class="nt">&lt;/title&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;woot:price</span> <span class="na">xmlns:woot=</span><span class="s">&quot;http://www.woot.com/&quot;</span><span class="nt">&gt;</span>$279.99<span class="nt">&lt;/woot:price&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;woot:soldout</span> <span class="na">xmlns:woot=</span><span class="s">&quot;http://www.woot.com/&quot;</span><span class="nt">&gt;</span>False<span class="nt">&lt;/woot:soldout&gt;</span>
+</span><span class='line'><span class="nt">&lt;woot:wootoff</span> <span class="na">xmlns:woot=</span><span class="s">&quot;http://www.woot.com/&quot;</span><span class="nt">&gt;</span>False<span class="nt">&lt;/woot:wootoff&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;woot:purchaseurl</span> <span class="na">xmlns:woot=</span><span class="s">&quot;http://www.woot.com/&quot;</span><span class="nt">&gt;</span>http://www.woot.com/WantOne.aspx?id=e94aa72d-5860-4f9b-bab2-42211de2f4cc<span class="nt">&lt;/woot:purchaseurl&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;woot:thumbnailimage</span> <span class="na">xmlns:woot=</span><span class="s">&quot;http://www.woot.com/&quot;</span><span class="nt">&gt;</span>http://sale.images.woot.com/Dyson_DC24_Blueprint_Limited_EditionbklThumbnail.jpg<span class="nt">&lt;/woot:thumbnailimage&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;woot:substandardimage</span> <span class="na">xmlns:woot=</span><span class="s">&quot;http://www.woot.com/&quot;</span><span class="nt">&gt;</span>http://sale.images.woot.com/Dyson_DC24_Blueprint_Limited_EditionxxcShoppingYahoo.jpg<span class="nt">&lt;/woot:substandardimage&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;woot:standardimage</span> <span class="na">xmlns:woot=</span><span class="s">&quot;http://www.woot.com/&quot;</span><span class="nt">&gt;</span>http://sale.images.woot.com/Dyson_DC24_Blueprint_Limited_Editionm32Standard.jpg<span class="nt">&lt;/woot:standardimage&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;woot:detailimage</span> <span class="na">xmlns:woot=</span><span class="s">&quot;http://www.woot.com/&quot;</span><span class="nt">&gt;</span>http://sale.images.woot.com/Dyson_DC24_Blueprint_Limited_Edition98lDetail.jpg<span class="nt">&lt;/woot:detailimage&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;woot:shipping</span> <span class="na">xmlns:woot=</span><span class="s">&quot;http://www.woot.com/&quot;</span><span class="nt">&gt;</span>$5 shipping<span class="nt">&lt;/woot:shipping&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;/item&gt;</span>
+</span><span class='line'><span class="nt">&lt;/channel&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>Defining the Model Object</h3>
+
+<p>The first thing I did was create a model object which would encapsulate the element values from the rss feed that I was interested in. Here is the code for the class:</p>
+
+<h4>SaleItem.h</h4>
+
+<figure class='code'><figcaption><span>Interface File</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+</pre></td><td class='code'><pre><code class='objective-c'><span class='line'><span class="cp">#import &lt;Foundation/Foundation.h&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">@interface</span> <span class="nc">SaleItem</span> : <span class="bp">NSObject</span> <span class="p">{</span>
+</span><span class='line'>  <span class="bp">NSString</span> <span class="o">*</span><span class="n">itemTitle</span><span class="p">;</span>
+</span><span class='line'>  <span class="bp">NSString</span> <span class="o">*</span><span class="n">itemPrice</span><span class="p">;</span>
+</span><span class='line'>  <span class="bp">NSString</span> <span class="o">*</span><span class="n">itemThumbnaillUrl</span><span class="p">;</span>
+</span><span class='line'>  <span class="bp">NSString</span> <span class="o">*</span><span class="n">itemSubstandardImageUrl</span><span class="p">;</span>
+</span><span class='line'>  <span class="bp">NSString</span> <span class="o">*</span><span class="n">itemStandardImageUrl</span><span class="p">;</span>
+</span><span class='line'>  <span class="bp">NSString</span> <span class="o">*</span><span class="n">itemDetailImageUrl</span><span class="p">;</span>
+</span><span class='line'>  <span class="bp">NSString</span> <span class="o">*</span><span class="n">itemDescription</span><span class="p">;</span>
+</span><span class='line'>  <span class="bp">NSString</span> <span class="o">*</span><span class="n">itemShippingCost</span><span class="p">;</span>
+</span><span class='line'>  <span class="bp">NSString</span> <span class="o">*</span><span class="n">itemSaleUrl</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kt">BOOL</span> <span class="n">isWootOff</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span> <span class="k">retain</span><span class="p">)</span> <span class="bp">NSString</span> <span class="o">*</span><span class="n">itemTitle</span><span class="p">;</span>
+</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span> <span class="k">retain</span><span class="p">)</span> <span class="bp">NSString</span> <span class="o">*</span><span class="n">itemPrice</span><span class="p">;</span>
+</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span> <span class="k">retain</span><span class="p">)</span> <span class="bp">NSString</span> <span class="o">*</span><span class="n">itemThumbnaillUrl</span><span class="p">;</span>
+</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span> <span class="k">retain</span><span class="p">)</span> <span class="bp">NSString</span> <span class="o">*</span><span class="n">itemSubstandardImageUrl</span><span class="p">;</span>
+</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span> <span class="k">retain</span><span class="p">)</span> <span class="bp">NSString</span> <span class="o">*</span><span class="n">itemStandardImageUrl</span><span class="p">;</span>
+</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span> <span class="k">retain</span><span class="p">)</span> <span class="bp">NSString</span> <span class="o">*</span><span class="n">itemDetailImageUrl</span><span class="p">;</span>
+</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span> <span class="k">retain</span><span class="p">)</span> <span class="bp">NSString</span> <span class="o">*</span><span class="n">itemDescription</span><span class="p">;</span>
+</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span> <span class="k">retain</span><span class="p">)</span> <span class="bp">NSString</span> <span class="o">*</span><span class="n">itemShippingCost</span><span class="p">;</span>
+</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span> <span class="k">retain</span><span class="p">)</span> <span class="bp">NSString</span> <span class="o">*</span><span class="n">itemSaleUrl</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span> <span class="k">assign</span><span class="p">)</span> <span class="kt">BOOL</span> <span class="n">isWootOff</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">@end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h4>SaleItem.m</h4>
+
+<figure class='code'><figcaption><span>Implementation File</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+</pre></td><td class='code'><pre><code class='objective-c'><span class='line'><span class="cp">#import &quot;SaleItem.h&quot;</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">@implementation</span> <span class="nc">SaleItem</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">@synthesize</span> <span class="n">itemTitle</span><span class="p">;</span>
+</span><span class='line'><span class="k">@synthesize</span> <span class="n">itemPrice</span><span class="p">;</span>
+</span><span class='line'><span class="k">@synthesize</span> <span class="n">itemThumbnaillUrl</span><span class="p">;</span>
+</span><span class='line'><span class="k">@synthesize</span> <span class="n">itemSubstandardImageUrl</span><span class="p">;</span>
+</span><span class='line'><span class="k">@synthesize</span> <span class="n">itemStandardImageUrl</span><span class="p">;</span>
+</span><span class='line'><span class="k">@synthesize</span> <span class="n">itemDetailImageUrl</span><span class="p">;</span>
+</span><span class='line'><span class="k">@synthesize</span> <span class="n">itemDescription</span><span class="p">;</span>
+</span><span class='line'><span class="k">@synthesize</span> <span class="n">itemShippingCost</span><span class="p">;</span>
+</span><span class='line'><span class="k">@synthesize</span> <span class="n">itemSaleUrl</span><span class="p">;</span>
+</span><span class='line'><span class="k">@synthesize</span> <span class="n">isWootOff</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">-(</span><span class="kt">void</span><span class="p">)</span> <span class="nf">dealloc</span><span class="p">{</span>
+</span><span class='line'>  <span class="p">[</span><span class="n">itemTitle</span> <span class="k">release</span><span class="p">];</span>
+</span><span class='line'>  <span class="p">[</span><span class="n">itemPrice</span> <span class="k">release</span><span class="p">];</span>
+</span><span class='line'>  <span class="p">[</span><span class="n">itemThumbnaillUrl</span> <span class="k">release</span><span class="p">];</span>
+</span><span class='line'>  <span class="p">[</span><span class="n">itemSubstandardImageUrl</span> <span class="k">release</span><span class="p">];</span>
+</span><span class='line'>  <span class="p">[</span><span class="n">itemStandardImageUrl</span> <span class="k">release</span><span class="p">];</span>
+</span><span class='line'>  <span class="p">[</span><span class="n">itemDetailImageUrl</span> <span class="k">release</span><span class="p">];</span>
+</span><span class='line'>  <span class="p">[</span><span class="n">itemDescription</span> <span class="k">release</span><span class="p">];</span>
+</span><span class='line'>  <span class="p">[</span><span class="n">itemShippingCost</span> <span class="k">release</span><span class="p">];</span>
+</span><span class='line'>  <span class="p">[</span><span class="n">itemSaleUrl</span> <span class="k">release</span><span class="p">];</span>  
+</span><span class='line'>
+</span><span class='line'>  <span class="p">[</span><span class="nb">super</span> <span class="n">dealloc</span><span class="p">];</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">@end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>Defining a Class to Reference Constants</h3>
+
+<p>Next, to make my life easier, I defined a class to define some constants. These constants define the string values I will be searching for as I parse the XML.</p>
+
+<figure class='code'><figcaption><span>Constants Header</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+</pre></td><td class='code'><pre><code class='objective-c'><span class='line'><span class="cp">####Constants.h</span>
+</span><span class='line'>  <span class="cp">#import &lt;Foundation/Foundation.h&gt;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">extern</span> <span class="bp">NSString</span> <span class="o">*</span> <span class="k">const</span> <span class="n">ITEM</span><span class="p">;</span>
+</span><span class='line'>  <span class="k">extern</span> <span class="bp">NSString</span> <span class="o">*</span> <span class="k">const</span> <span class="n">TITLE</span><span class="p">;</span>
+</span><span class='line'>  <span class="k">extern</span> <span class="bp">NSString</span> <span class="o">*</span> <span class="k">const</span> <span class="n">PRICE</span><span class="p">;</span>
+</span><span class='line'>  <span class="k">extern</span> <span class="bp">NSString</span> <span class="o">*</span> <span class="k">const</span> <span class="n">THUMBNAIL_IMAGE</span><span class="p">;</span>
+</span><span class='line'>  <span class="k">extern</span> <span class="bp">NSString</span> <span class="o">*</span> <span class="k">const</span> <span class="n">SUBSTANDARD_IMAGE</span><span class="p">;</span>
+</span><span class='line'>  <span class="k">extern</span> <span class="bp">NSString</span> <span class="o">*</span> <span class="k">const</span> <span class="n">STANDARD_IMAGE</span><span class="p">;</span>
+</span><span class='line'>  <span class="k">extern</span> <span class="bp">NSString</span> <span class="o">*</span> <span class="k">const</span> <span class="n">DETAIL_IMAGE</span><span class="p">;</span>
+</span><span class='line'>  <span class="k">extern</span> <span class="bp">NSString</span> <span class="o">*</span> <span class="k">const</span> <span class="n">DESCRIPTION</span><span class="p">;</span>
+</span><span class='line'>  <span class="k">extern</span> <span class="bp">NSString</span> <span class="o">*</span> <span class="k">const</span> <span class="n">IS_WOOTOFF</span><span class="p">;</span>
+</span><span class='line'>  <span class="k">extern</span> <span class="bp">NSString</span> <span class="o">*</span> <span class="k">const</span> <span class="n">SHIPPING_PRICE</span><span class="p">;</span>
+</span><span class='line'>  <span class="k">extern</span> <span class="bp">NSString</span> <span class="o">*</span> <span class="k">const</span> <span class="n">SALE_URL</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">@interface</span> <span class="nc">Constants</span> : <span class="bp">NSObject</span> <span class="p">{</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p></p>
+
+<h4>Constants.m</h4>
+
+<figure class='code'><figcaption><span>Constants Implementation</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+</pre></td><td class='code'><pre><code class='objective-c'><span class='line'><span class="cp">#import &quot;Constants.h&quot;</span>
+</span><span class='line'><span class="k">@implementation</span> <span class="nc">Constants</span>
+</span><span class='line'>  <span class="bp">NSString</span> <span class="o">*</span> <span class="k">const</span> <span class="n">ITEM</span>              <span class="o">=</span> <span class="s">@&quot;item&quot;</span><span class="p">;</span>
+</span><span class='line'>  <span class="bp">NSString</span> <span class="o">*</span> <span class="k">const</span> <span class="n">TITLE</span>             <span class="o">=</span> <span class="s">@&quot;title&quot;</span><span class="p">;</span>
+</span><span class='line'>  <span class="bp">NSString</span> <span class="o">*</span> <span class="k">const</span> <span class="n">PRICE</span>             <span class="o">=</span> <span class="s">@&quot;woot:price&quot;</span><span class="p">;</span>
+</span><span class='line'>  <span class="bp">NSString</span> <span class="o">*</span> <span class="k">const</span> <span class="n">THUMBNAIL_IMAGE</span>   <span class="o">=</span> <span class="s">@&quot;woot:thumbnailimage&quot;</span><span class="p">;</span>
+</span><span class='line'>  <span class="bp">NSString</span> <span class="o">*</span> <span class="k">const</span> <span class="n">SUBSTANDARD_IMAGE</span> <span class="o">=</span> <span class="s">@&quot;woot:substandardimage&quot;</span><span class="p">;</span>
+</span><span class='line'>  <span class="bp">NSString</span> <span class="o">*</span> <span class="k">const</span> <span class="n">STANDARD_IMAGE</span>        <span class="o">=</span> <span class="s">@&quot;woot:standardimage&quot;</span><span class="p">;</span>
+</span><span class='line'>  <span class="bp">NSString</span> <span class="o">*</span> <span class="k">const</span> <span class="n">DETAIL_IMAGE</span>      <span class="o">=</span> <span class="s">@&quot;woot:detailimage&quot;</span><span class="p">;</span>
+</span><span class='line'>  <span class="bp">NSString</span> <span class="o">*</span> <span class="k">const</span> <span class="n">DESCRIPTION</span>       <span class="o">=</span> <span class="s">@&quot;description&quot;</span><span class="p">;</span>
+</span><span class='line'>  <span class="bp">NSString</span> <span class="o">*</span> <span class="k">const</span> <span class="n">IS_WOOTOFF</span>            <span class="o">=</span> <span class="s">@&quot;woot:wootoff&quot;</span><span class="p">;</span>
+</span><span class='line'>  <span class="bp">NSString</span> <span class="o">*</span> <span class="k">const</span> <span class="n">SHIPPING_PRICE</span>        <span class="o">=</span> <span class="s">@&quot;woot:shipping&quot;</span><span class="p">;</span>
+</span><span class='line'>  <span class="bp">NSString</span> <span class="o">*</span> <span class="k">const</span> <span class="n">SALE_URL</span>          <span class="o">=</span> <span class="s">@&quot;woot:purchaseurl&quot;</span><span class="p">;</span>
+</span><span class='line'><span class="k">@end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>Creating the Worker Class</h3>
+
+<p>NSXMLParser works using delegate callbacks to let you hook into events that you are interested in. Most of the examples I found online used delegate methods right inside the viewcontroller to accomplish the parsing. Since I have several views which are going to take advantage of this functionality, I decided to split it out into a worker class. Let&rsquo;s construct this class (I named it XMLParser) piece by piece:</p>
+
+<h4>XMLParser.h</h4>
+
+<figure class='code'><figcaption><span>XMLParser Header</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+</pre></td><td class='code'><pre><code class='objective-c'><span class='line'><span class="cp">#import &lt;UIKit/UIKit.h&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">@class</span> <span class="nc">Constants</span>; <span class="c1">//Forward declaration of the Constants class</span>
+</span><span class='line'><span class="k">@class</span> <span class="nc">SaleItem</span>;  <span class="c1">//Forward declaration of the SaleItem model object class</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">@interface</span> <span class="nc">XMLParser</span> : <span class="bp">NSObject</span> <span class="p">{</span>
+</span><span class='line'>  <span class="bp">NSMutableString</span> <span class="o">*</span><span class="n">currentValue</span><span class="p">;</span> <span class="c1">//This will hold element values as we build them   piece by piece</span>
+</span><span class='line'>  <span class="kt">BOOL</span> <span class="n">itemElementInProgress</span><span class="p">;</span>   <span class="c1">// This will determine if we are currently parsing     an element</span>
+</span><span class='line'>  <span class="n">SaleItem</span> <span class="o">*</span><span class="n">saleItem</span><span class="p">;</span> <span class="c1">// Instance of our model object</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span> <span class="k">retain</span><span class="p">)</span> <span class="bp">NSMutableString</span> <span class="o">*</span><span class="n">currentValue</span><span class="p">;</span>
+</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span> <span class="k">retain</span><span class="p">)</span> <span class="n">SaleItem</span> <span class="o">*</span><span class="n">saleItem</span><span class="p">;</span>
+</span><span class='line'><span class="k">@property</span> <span class="kt">BOOL</span> <span class="n">itemElementInProgress</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">BOOL</span><span class="p">)</span> <span class="nf">parse</span><span class="p">;</span> <span class="c1">// This performs the parsing of the file</span>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">id</span><span class="p">)</span><span class="nf">initWithSaleItem:</span><span class="p">(</span><span class="n">SaleItem</span> <span class="o">*</span><span class="p">)</span><span class="nv">aSaleItem</span><span class="p">;</span> <span class="c1">// Custom initializer</span>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span> <span class="nf">trimString</span><span class="p">;</span> <span class="c1">// Small convenience method to remove whitespace</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">@end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h4>Building XMLParser.m</h4>
+
+<p>Lets start with our basic shell:</p>
+
+<figure class='code'><figcaption><span>XML Parser Implementation</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+</pre></td><td class='code'><pre><code class='objective-c'><span class='line'><span class="cp">#import &quot;Constants.h&quot;</span>
+</span><span class='line'><span class="cp">#import &quot;SaleItem.h&quot;</span>
+</span><span class='line'><span class="cp">#import &quot;XMLParser.h&quot;</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">@implementation</span> <span class="nc">XMLParser</span>
+</span><span class='line'>  <span class="c1">// Synthesize our properties</span>
+</span><span class='line'>  <span class="k">@synthesize</span> <span class="n">currentValue</span><span class="p">;</span>
+</span><span class='line'>  <span class="k">@synthesize</span> <span class="n">itemElementInProgress</span><span class="p">;</span>
+</span><span class='line'>  <span class="k">@synthesize</span> <span class="n">saleItem</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="c1">// Make sure objects are released</span>
+</span><span class='line'>  <span class="o">-</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="n">dealloc</span><span class="p">{</span>
+</span><span class='line'>      <span class="p">[</span><span class="n">currentValue</span> <span class="k">release</span><span class="p">];</span>
+</span><span class='line'>      <span class="p">[</span><span class="n">saleItem</span> <span class="k">release</span><span class="p">];</span>
+</span><span class='line'>      <span class="p">[</span><span class="nb">super</span> <span class="n">dealloc</span><span class="p">];</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">@end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Now, let&rsquo;s create the initializer. Add the following code directly after the property
+@synthesize calls:</p>
+
+<figure class='code'><figcaption><span>Initializer</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='objective-c'><span class='line'>  <span class="c1">// Sets the saleItem property to a SaleItem object passed in </span>
+</span><span class='line'>  <span class="o">-</span> <span class="p">(</span><span class="kt">id</span><span class="p">)</span><span class="nl">initWithSaleItem</span><span class="p">:(</span><span class="n">SaleItem</span> <span class="o">*</span><span class="p">)</span><span class="n">aSaleItem</span><span class="p">{</span>
+</span><span class='line'>      <span class="k">if</span> <span class="p">(</span><span class="nb">self</span> <span class="o">=</span> <span class="p">[</span><span class="nb">super</span> <span class="n">init</span><span class="p">])</span> <span class="p">{</span>
+</span><span class='line'>          <span class="p">[</span><span class="nb">self</span> <span class="nl">setSaleItem</span><span class="p">:</span><span class="n">aSaleItem</span><span class="p">];</span>
+</span><span class='line'>          <span class="p">[</span><span class="nb">self</span> <span class="nl">setItemElementInProgress</span><span class="p">:</span><span class="nb">NO</span><span class="p">];</span>
+</span><span class='line'>      <span class="p">}</span>
+</span><span class='line'>  
+</span><span class='line'>      <span class="k">return</span> <span class="nb">self</span><span class="p">;</span>
+</span><span class='line'>  <span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>I am initializing the class this way so I can populate the SaleItem inside of XMLParser and still have access to it from the calling class (a ViewController) when I&rsquo;m done parsing.</p>
+
+<p>Before we get into how to instantiate NSXMLParser and use it to parse a file, let&rsquo;s set up the delegate methods to get the data we need out of the file.</p>
+
+<p>I usually put delegate methods at the bottom of the file, right after a <a href="http://cocoasamurai.blogspot.com/2006/09/tip-pragma-mark-organizing-your-source.html">#pragma mark</a> definition to delineate this group of methods from the rest of the code. Hop down to the bottom of XMLParser.m, and place this code just prior to @end:</p>
+
+<figure class='code'><figcaption><span>Delegate Method</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+</pre></td><td class='code'><pre><code class='objective-c'><span class='line'><span class="cp">#pragma mark NSXMLParser Delegate Calls</span>
+</span><span class='line'><span class="c1">// This method gets called every time NSXMLParser encounters a new element</span>
+</span><span class='line'><span class="p">-(</span><span class="kt">void</span><span class="p">)</span><span class="nf">parser:</span><span class="p">(</span><span class="bp">NSXMLParser</span> <span class="o">*</span><span class="p">)</span><span class="nv">parser</span> <span class="nf">didStartElement:</span><span class="p">(</span><span class="bp">NSString</span> <span class="o">*</span><span class="p">)</span><span class="nv">elementName</span>
+</span><span class='line'>  <span class="nf">namespaceURI:</span><span class="p">(</span><span class="bp">NSString</span> <span class="o">*</span><span class="p">)</span><span class="nv">namespaceURI</span>
+</span><span class='line'>  <span class="nf">qualifiedName:</span><span class="p">(</span><span class="bp">NSString</span> <span class="o">*</span><span class="p">)</span><span class="nv">qualifiedName</span>
+</span><span class='line'>      <span class="nf">attributes:</span><span class="p">(</span><span class="bp">NSDictionary</span> <span class="o">*</span><span class="p">)</span><span class="nv">attributeDict</span><span class="p">{</span>
+</span><span class='line'>      <span class="c1">// If element is named &quot;item&quot;, set bool to true so we know</span>
+</span><span class='line'>      <span class="c1">// we are inside the element in other methods. This is needed</span>
+</span><span class='line'>      <span class="c1">// because &quot;item&quot; contains most of the data we need</span>
+</span><span class='line'>      <span class="k">if</span> <span class="p">([</span><span class="n">elementName</span> <span class="nl">isEqualToString</span><span class="p">:</span><span class="n">ITEM</span><span class="p">])</span> <span class="p">{</span>
+</span><span class='line'>          <span class="p">[</span><span class="nb">self</span> <span class="nl">setItemElementInProgress</span><span class="p">:</span><span class="nb">YES</span><span class="p">];</span>
+</span><span class='line'>      <span class="p">}</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// This method gets called for every character NSXMLParser finds.</span>
+</span><span class='line'>  <span class="o">-</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nl">parser</span><span class="p">:(</span><span class="bp">NSXMLParser</span> <span class="o">*</span><span class="p">)</span><span class="n">parser</span> <span class="nl">foundCharacters</span><span class="p">:(</span><span class="bp">NSString</span> <span class="o">*</span><span class="p">)</span><span class="n">string</span><span class="p">{</span>
+</span><span class='line'>      <span class="c1">// If currentValue doesn&#39;t exist, initialize and allocate</span>
+</span><span class='line'>      <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">currentValue</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>          <span class="n">currentValue</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">NSMutableString</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">init</span><span class="p">];</span>
+</span><span class='line'>      <span class="p">}</span>
+</span><span class='line'>  
+</span><span class='line'>      <span class="c1">// Append the current character value to the running string</span>
+</span><span class='line'>      <span class="c1">// that is being parsed</span>
+</span><span class='line'>      <span class="p">[</span><span class="n">currentValue</span> <span class="nl">appendString</span><span class="p">:</span><span class="n">string</span><span class="p">];</span>
+</span><span class='line'>  <span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>The final delegate method is fired when NSXMLParser reaches the end of an element. Here is the place we can be sure we have gotten the full value of the element, and can now persist that data to our model object for use. right after the foundCharacters method, add this method:</p>
+
+<figure class='code'><figcaption><span>Delegate Method</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+</pre></td><td class='code'><pre><code class='objective-c'><span class='line'><span class="c1">// This method is called whenever NSXMLParser reaches the end of an element</span>
+</span><span class='line'><span class="p">-(</span><span class="kt">void</span><span class="p">)</span><span class="nf">parser:</span><span class="p">(</span><span class="bp">NSXMLParser</span> <span class="o">*</span><span class="p">)</span><span class="nv">parser</span> <span class="nf">didEndElement:</span><span class="p">(</span><span class="bp">NSString</span> <span class="o">*</span><span class="p">)</span><span class="nv">elementName</span>
+</span><span class='line'>                                  <span class="nf">namespaceURI:</span><span class="p">(</span><span class="bp">NSString</span> <span class="o">*</span><span class="p">)</span><span class="nv">namespaceURI</span>
+</span><span class='line'>                                  <span class="nf">qualifiedName:</span><span class="p">(</span><span class="bp">NSString</span> <span class="o">*</span><span class="p">)</span><span class="nv">qName</span><span class="p">{</span>
+</span><span class='line'><span class="p">[</span><span class="nb">self</span> <span class="n">trimString</span><span class="p">];</span>  <span class="c1">// Remove whitespace with a convenience method</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">if</span> <span class="p">([</span><span class="n">elementName</span> <span class="nl">isEqualToString</span><span class="p">:</span><span class="n">ITEM</span><span class="p">])</span> <span class="p">{</span>
+</span><span class='line'>      <span class="p">[</span><span class="nb">self</span> <span class="nl">setItemElementInProgress</span><span class="p">:</span><span class="nb">NO</span><span class="p">];</span>  <span class="c1">// If we are currently on the &quot;item&quot;   element, then do not save value</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="c1">// If we are processing an element inside of &quot;item&quot;, </span>
+</span><span class='line'>  <span class="c1">// then determine if we need to save the value </span>
+</span><span class='line'>  <span class="k">if</span> <span class="p">(</span><span class="nb">self</span><span class="p">.</span><span class="n">itemElementInProgress</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>      <span class="c1">// Now check the element id against the ones we are </span>
+</span><span class='line'>      <span class="c1">// interested in (using the Constants class values).</span>
+</span><span class='line'>      <span class="c1">// If we find one, set the corresponding property on the </span>
+</span><span class='line'>      <span class="c1">// SaleItem object</span>
+</span><span class='line'>      <span class="k">if</span> <span class="p">([</span><span class="n">elementName</span> <span class="nl">isEqualToString</span><span class="p">:</span><span class="n">TITLE</span><span class="p">])</span> <span class="p">{</span>
+</span><span class='line'>          <span class="p">[[</span><span class="nb">self</span> <span class="n">saleItem</span><span class="p">]</span> <span class="nl">setItemTitle</span><span class="p">:</span><span class="n">currentValue</span><span class="p">];</span>
+</span><span class='line'>      <span class="p">}</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="k">if</span> <span class="p">([</span><span class="n">elementName</span> <span class="nl">isEqualToString</span><span class="p">:</span><span class="n">PRICE</span><span class="p">])</span> <span class="p">{</span>
+</span><span class='line'>          <span class="p">[[</span><span class="nb">self</span> <span class="n">saleItem</span><span class="p">]</span> <span class="nl">setItemPrice</span><span class="p">:</span><span class="n">currentValue</span><span class="p">];</span>
+</span><span class='line'>      <span class="p">}</span>
+</span><span class='line'>  
+</span><span class='line'>      <span class="k">if</span> <span class="p">([</span><span class="n">elementName</span> <span class="nl">isEqualToString</span><span class="p">:</span><span class="n">THUMBNAIL_IMAGE</span><span class="p">])</span> <span class="p">{</span>
+</span><span class='line'>          <span class="p">[[</span><span class="nb">self</span> <span class="n">saleItem</span><span class="p">]</span> <span class="nl">setItemThumbnaillUrl</span><span class="p">:</span><span class="n">currentValue</span><span class="p">];</span>
+</span><span class='line'>      <span class="p">}</span>
+</span><span class='line'>  
+</span><span class='line'>      <span class="k">if</span> <span class="p">([</span><span class="n">elementName</span> <span class="nl">isEqualToString</span><span class="p">:</span><span class="n">SUBSTANDARD_IMAGE</span><span class="p">])</span> <span class="p">{</span>
+</span><span class='line'>          <span class="p">[[</span><span class="nb">self</span> <span class="n">saleItem</span><span class="p">]</span> <span class="nl">setItemSubstandardImageUrl</span><span class="p">:</span><span class="n">currentValue</span><span class="p">];</span>
+</span><span class='line'>      <span class="p">}</span>
+</span><span class='line'>  
+</span><span class='line'>      <span class="k">if</span> <span class="p">([</span><span class="n">elementName</span> <span class="nl">isEqualToString</span><span class="p">:</span><span class="n">STANDARD_IMAGE</span><span class="p">])</span> <span class="p">{</span>
+</span><span class='line'>          <span class="p">[[</span><span class="nb">self</span> <span class="n">saleItem</span><span class="p">]</span> <span class="nl">setItemStandardImageUrl</span><span class="p">:</span><span class="n">currentValue</span><span class="p">];</span>
+</span><span class='line'>      <span class="p">}</span>
+</span><span class='line'>  
+</span><span class='line'>      <span class="k">if</span> <span class="p">([</span><span class="n">elementName</span> <span class="nl">isEqualToString</span><span class="p">:</span><span class="n">DETAIL_IMAGE</span><span class="p">])</span> <span class="p">{</span>
+</span><span class='line'>          <span class="p">[[</span><span class="nb">self</span> <span class="n">saleItem</span><span class="p">]</span> <span class="nl">setItemDetailImageUrl</span><span class="p">:</span><span class="n">currentValue</span><span class="p">];</span>
+</span><span class='line'>      <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="k">if</span> <span class="p">([</span><span class="n">elementName</span> <span class="nl">isEqualToString</span><span class="p">:</span><span class="n">DESCRIPTION</span><span class="p">])</span> <span class="p">{</span>
+</span><span class='line'>          <span class="p">[[</span><span class="nb">self</span> <span class="n">saleItem</span><span class="p">]</span> <span class="nl">setItemDescription</span><span class="p">:</span><span class="n">currentValue</span><span class="p">];</span>
+</span><span class='line'>      <span class="p">}</span>
+</span><span class='line'>  
+</span><span class='line'>      <span class="k">if</span> <span class="p">([</span><span class="n">elementName</span> <span class="nl">isEqualToString</span><span class="p">:</span><span class="n">SHIPPING_PRICE</span><span class="p">])</span> <span class="p">{</span>
+</span><span class='line'>          <span class="p">[[</span><span class="nb">self</span> <span class="n">saleItem</span><span class="p">]</span> <span class="nl">setItemShippingCost</span><span class="p">:</span><span class="n">currentValue</span><span class="p">];</span>
+</span><span class='line'>      <span class="p">}</span>
+</span><span class='line'>  
+</span><span class='line'>      <span class="k">if</span> <span class="p">([</span><span class="n">elementName</span> <span class="nl">isEqualToString</span><span class="p">:</span><span class="n">SALE_URL</span><span class="p">])</span> <span class="p">{</span>
+</span><span class='line'>          <span class="p">[[</span><span class="nb">self</span> <span class="n">saleItem</span><span class="p">]</span> <span class="nl">setItemSaleUrl</span><span class="p">:</span><span class="n">currentValue</span><span class="p">];</span>
+</span><span class='line'>      <span class="p">}</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="p">[</span><span class="n">currentValue</span> <span class="k">release</span><span class="p">];</span>
+</span><span class='line'>  <span class="n">currentValue</span> <span class="o">=</span> <span class="nb">nil</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>The Parse Method</h3>
+
+<p>Finally, the whole process is started by the parse method:</p>
+
+<figure class='code'><figcaption><span>Parse Method</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+</pre></td><td class='code'><pre><code class='objective-c'><span class='line'>      <span class="o">-</span> <span class="p">(</span><span class="kt">BOOL</span><span class="p">)</span><span class="n">parse</span><span class="p">{</span>
+</span><span class='line'>      <span class="c1">// Create and initialize an NSURL with the RSS feed address and use it to  instantiate NSXMLParser</span>
+</span><span class='line'>      <span class="bp">NSURL</span> <span class="o">*</span><span class="n">url</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">NSURL</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithString</span><span class="p">:</span><span class="s">@&quot;http://www.woot.com/salerss.aspx&quot;</span><span class="p">];</span>
+</span><span class='line'>      <span class="bp">NSXMLParser</span> <span class="o">*</span><span class="n">parser</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">NSXMLParser</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithContentsOfURL</span><span class="p">:</span><span class="n">url</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="c1">// Tell NSXMLParser that this class is its delegate</span>
+</span><span class='line'>      <span class="p">[</span><span class="n">parser</span> <span class="nl">setDelegate</span><span class="p">:</span><span class="nb">self</span><span class="p">];</span>
+</span><span class='line'>  
+</span><span class='line'>      <span class="c1">// Kick off file parsing</span>
+</span><span class='line'>      <span class="p">[</span><span class="n">parser</span> <span class="n">parse</span><span class="p">];</span>
+</span><span class='line'>  
+</span><span class='line'>      <span class="c1">// Clean up</span>
+</span><span class='line'>      <span class="p">[</span><span class="n">url</span> <span class="k">release</span><span class="p">];</span>
+</span><span class='line'>  
+</span><span class='line'>      <span class="p">[</span><span class="n">parser</span> <span class="nl">setDelegate</span><span class="p">:</span><span class="nb">nil</span><span class="p">];</span>
+</span><span class='line'>      <span class="p">[</span><span class="n">parser</span> <span class="k">release</span><span class="p">];</span>
+</span><span class='line'>      <span class="k">return</span> <span class="nb">YES</span><span class="p">;</span>
+</span><span class='line'>  <span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>Final Notes</h3>
+
+<p>Some final thoughts on the methodology I am using:</p>
+
+<ul>
+<li>I want to get rid of the if statements and use Key-Value coding to set property values. I haven&rsquo;t gotten the chance to refactor this</li>
+<li>I am very new to Cocoa, and any suggestions/comments are welcome and encouraged!</li>
+</ul>
+
+</div>
+
+
+<div class="meta">
+	<div class="date">
+
+
+
+
+
+
+
+
+  
+
+
+
+<time datetime="2010-06-07T23:34:00-04:00" pubdate data-updated="true">Jun 7th, 2010</time></div>
+	
+
+<div class="tags">
+
+	<a class='category' href='/blog/categories/cocoa/'>cocoa</a>, <a class='category' href='/blog/categories/coding/'>coding</a>, <a class='category' href='/blog/categories/nsxmlparser/'>nsxmlparser</a>
+
+</div>
+
+
+</div>
+</article>
+</div>
+	<footer id="footer" class="inner">Copyright &copy; 2014
+ Mark Struzinski 
+<br>
+Powered by Octopress.
+</footer>
+	
+
+</body>
+</html>

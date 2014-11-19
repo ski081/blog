@@ -1,0 +1,121 @@
+
+<!DOCTYPE HTML>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Setting up iOS Logic Tests [part 4]  | Mark Struzinski</title>
+
+	<meta name="author" content="Mark Struzinski"> 
+	
+	<meta name="description" content="This is part 4 in a multi-part series on iOS unit testing and integration testing. In the last post, we discussed setting up Core Data and the &hellip;"> <meta name="keywords" content="">
+
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+	<link href="http://feedpress.me/markstruzinski" rel="alternate" title="Mark Struzinski" type="application/atom+xml">
+	<link rel="canonical" href="">
+	<link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+	<link href="/stylesheets/font-awesome.min.css" rel="stylesheet" type="text/css">
+	
+	<!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+	
+</head>
+
+
+
+<body>
+	<header id="header" class="inner"><h1>Mark Struzinski</h1>
+<nav id="main-nav"><ul>
+	<li><a href="/">Blog</a></li>
+	<li><a href="/archives">Archive</a></li>
+	<li><a href="/about">About</a></li>
+    <li><a href="/portfolio">Portfolio</a></li>
+</ul>
+</nav>
+
+
+</header>
+
+	<div id="content" class="inner"><article class="post">
+	<h2 class="title">Setting Up iOS Logic Tests [Part 4]</h2>
+	<div class="entry-content"><p>This is part 4 in a <a href="/blog/2013/02/01/unit-testing-series/">multi-part series</a> on iOS unit testing and integration testing. In the <a href="/blog/2013/02/19/setting-up-ios-logic-tests-part-3/">last post</a>, we discussed setting up Core Data and the Magical Record library. This week, we’re going to set up our logic testing bundle. Let’s get started.</p>
+
+<!-- more -->
+
+
+<p>**Quick note: I recreated the sample project that goes along with this series. I made some unfortunate naming mistakes early on that made it unclear which bundles we were refernecing and working with. Going forward, the actual app bundle is named “SampleApp”, and other testing bundles will be named appropriately. I’m taking down the old GitHub repo and adding one here named SampleApp</p>
+
+<p>I went through and cleaned up the project a little bit. I moved some files into subfolders to get it a little more organized, and chanfed the name of the app target to <code>SamleApp</code> to make things a little clearer. The project is up on <a href="https://github.com/ski081/LogicTests">GitHub</a> and you can simply do a pull to get the changes.</p>
+
+<h2>Adding a Logic Test Bundle</h2>
+
+<p>First, we need to add the logic test bundle. Open the project navigator, and select the project node at the very top. In the center window, click the <strong>Add Target</strong> button at the bottom of the screen. Under the iOS section in the left menu, select <strong>Other</strong>. In the center pane, select <strong>Cocoa Unit Testing Bundle</strong>:</p>
+
+<p><img src="/images/post_images/logictests-select-bundle.png"></p>
+
+<p>Name it <strong>“Logic Tests”</strong>, leave everything else as-is, and click Finish. You should now be able to run the default unit tests included with the bundle and get a failing result. This will verify that your tests are set up. To verify:</p>
+
+<ol>
+<li>Switch your target in the top drop down from <strong>“SampleApp”</strong> to <strong>“LogicTests”</strong></li>
+<li>Go to the menu bat, select <strong>Product=>Test</strong></li>
+<li>You should see a new issue in the the Issue Navigator that reads “<em>Unit tests are not implemented yet in LogicTests</em>”</li>
+<li>If not, review the setup steps and try to figure out of you missed something</li>
+</ol>
+
+
+<p>Next, we should make it easier to run these tests. As it is, every time you want to run your logic tests, you would have to switch targets from your SampleApp target to the LogicTests target, then run the tests. This is harldy easy or efficient. We can make this simpler by hooking up the Test action of our main app scheme to the LogicTests bundle. This will enable is to run the logic tests directly from the main app bundle. Here’s how to do that:</p>
+
+<ol>
+<li>Select the SampleApp target</li>
+<li>Click the drop down, and select <strong>“Edit Scheme”</strong></li>
+<li>Select the Test action in the left sidebar</li>
+<li>Click the ‘<strong>+</strong>’ button to add an action</li>
+<li>You should see your LogicTests bundle under the SampleApp project. Select it, and click <strong>Add</strong>
+ <img src="/images/post_images/logictests-add-bundle-action.png"></li>
+<li>Click Ok</li>
+</ol>
+
+
+<p>Finally, instead of using the menu item to run unit tests, a much easier way to trigger them is via a keyboard shortcut. In Xcode, the default keyboard shortcut to run unit tests against the current target is to simply hit <strong>⌘ + U</strong>. Try this while you have SampleApp selected. It should run the LogicTests bundle and take you to the same error in the issue navigator as before.</p>
+
+<p>That’s it for this installment. Next up, we’ll start making use of our logic tests and look at the differences between logic tests and application tests in Xcode.</p>
+
+<p>As always, please contact me with any questions.</p>
+</div>
+
+
+<div class="meta">
+	<div class="date">
+
+
+
+
+
+
+
+
+  
+
+
+
+<time datetime="2013-04-08T16:05:00-04:00" pubdate data-updated="true">Apr 8th, 2013</time></div>
+	
+
+<div class="tags">
+
+	<a class='category' href='/blog/categories/unit-testing-series/'>unit testing series</a>
+
+</div>
+
+
+</div>
+</article>
+</div>
+	<footer id="footer" class="inner">Copyright &copy; 2014
+ Mark Struzinski 
+<br>
+Powered by Octopress.
+</footer>
+	
+
+</body>
+</html>

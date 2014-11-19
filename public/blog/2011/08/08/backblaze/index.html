@@ -1,0 +1,101 @@
+
+<!DOCTYPE HTML>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>BackBlaze, MDS Worker, and Spotlight  | Mark Struzinski</title>
+
+	<meta name="author" content="Mark Struzinski"> 
+	
+	<meta name="description" content="I recently began experiencing my system fans kicking in and running all the time. The fans began running so much that I almost didn&rsquo;t notice &hellip;"> <meta name="keywords" content="">
+
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+	<link href="http://feedpress.me/markstruzinski" rel="alternate" title="Mark Struzinski" type="application/atom+xml">
+	<link rel="canonical" href="">
+	<link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+	<link href="/stylesheets/font-awesome.min.css" rel="stylesheet" type="text/css">
+	
+	<!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+	
+</head>
+
+
+
+<body>
+	<header id="header" class="inner"><h1>Mark Struzinski</h1>
+<nav id="main-nav"><ul>
+	<li><a href="/">Blog</a></li>
+	<li><a href="/archives">Archive</a></li>
+	<li><a href="/about">About</a></li>
+    <li><a href="/portfolio">Portfolio</a></li>
+</ul>
+</nav>
+
+
+</header>
+
+	<div id="content" class="inner"><article class="post">
+	<h2 class="title">BackBlaze, MDS Worker, and Spotlight</h2>
+	<div class="entry-content"><p>I recently began experiencing my system fans kicking in and running all the time. The fans began running so much that I almost didn&rsquo;t notice them any more. When I pulled the Activity Monitor up, the <a href="http://osxdaily.com/2009/09/14/mdworker-what-is-mdworker/">md worker</a> was using over 100% of my system resources consistently.</p>
+
+<p>After looking up what md worker does, it appears to be a process spun off by spotlight to index your drive for quick searching. Even after a reboot, the fans would kick back in after a short idle time of maybe a minute. This process was seriously heating up the mac.</p>
+
+<!-- more -->
+
+
+<p>After doing some more research, I found this [excellent question and answer][superuserqa] from the [SuperUser][<a href="http://superuser.com/">http://superuser.com/</a>] site. I ran the following command in the terminal to log what Spotlight was trying on index at the time.</p>
+
+<figure class='code'><figcaption><span>fs_usage</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>sudo fs_usage -w -f filesys mdworker
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>The terminal showed the last file to be indexed was in the <strong>/Library/BackBlaze/bzdata</strong> folder. This was not Library in <strong>~/Users</strong>, but the one at the base of the volume. It was indexing this file over and over. My initial thought was that the system was hung on the file. A google search turned up <a href="http://www.backblaze.com/help-mac.html#filevault">this result</a> on the BackBlaze support page. BackBlaze frequently writes log data to a file. All files in the BackBlaze folder should be added to the Privacy Exclusions so that Spotlight will not attempt to index them. According to the support article, this exclusion should be added when BackBlaze is installed. Since the Lion version for BackBlaze was very recently released, this may be a bug in the BackBlaze installer.</p>
+
+<p><img src="/images/post_images/help-mac-spotlight.jpg"></p>
+
+<p>In my case, the folder had not been added.</p>
+
+<p>After adding the BackBlaze folder to the Spotlight Privacy exclusions, the problem disappeared at once. Good job on BackBlaze for having an excellent support document.</p>
+
+<p>UPDATE: I recently had to replace my hard drive and decided to do a fresh install rather than pulling over my <a href="http://www.bombich.com">Carbon Copy Cloner</a> backup. I experienced the exact same problem, and had to follow the process outlined above to fix it. This issue hasn&rsquo;t been resolved in the BackBlaze installer as of yet.</p>
+</div>
+
+
+<div class="meta">
+	<div class="date">
+
+
+
+
+
+
+
+
+  
+
+
+
+<time datetime="2011-08-08T22:56:00-04:00" pubdate data-updated="true">Aug 8th, 2011</time></div>
+	
+
+<div class="tags">
+
+	<a class='category' href='/blog/categories/backblaze/'>backblaze</a>, <a class='category' href='/blog/categories/backup/'>backup</a>, <a class='category' href='/blog/categories/mac/'>mac</a>
+
+</div>
+
+
+</div>
+</article>
+</div>
+	<footer id="footer" class="inner">Copyright &copy; 2014
+ Mark Struzinski 
+<br>
+Powered by Octopress.
+</footer>
+	
+
+</body>
+</html>

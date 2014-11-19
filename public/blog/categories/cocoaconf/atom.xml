@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: cocoaconf | Mark Struzinski]]></title>
+  <link href="http://markstruzinski.com/blog/categories/cocoaconf/atom.xml" rel="self"/>
+  <link href="http://markstruzinski.com/"/>
+  <updated>2014-11-16T19:37:40-05:00</updated>
+  <id>http://markstruzinski.com/</id>
+  <author>
+    <name><![CDATA[Mark Struzinski]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[CocoaConf Boston 2014]]></title>
+    <link href="http://markstruzinski.com/blog/2014/11/16/cocoaconf-boston-2014/"/>
+    <updated>2014-11-16T07:12:38-05:00</updated>
+    <id>http://markstruzinski.com/blog/2014/11/16/cocoaconf-boston-2014</id>
+    <content type="html"><![CDATA[<p>I attended the Boston stop of the <a href="http://cocoaconf.com">CocoaConf</a> tour this year. As always, it was a quality experience. I learned a ton, and I&rsquo;m still processing all the valuable information that was crammed into my brain. The Klein family puts together a great mix of technical content, community interaction, and fun events.</p>
+
+<p>The speakers were top notch. I got to meet <a href="https://twitter.com/subdigital">Ben Scheirman</a> of <a href="https://www.nsscreencast.com">NSScreenCast</a> fame, who I&rsquo;ve admired for a long time. Both of his talks were packed full of useful information. <a href="https://twitter.com/savinola">Laura Savinola</a> had my favorite session, which was basically 45 straight minutes of Xcode tips, tricks, and hacks. (Lots of note-taking in that one!)</p>
+
+<p>The event is paced so that the technical content is buffered with 15 minute breaks, less technical talks, and meals in-between. In my opinion, this prevents your brain from being completely overwhelmed with technical content.</p>
+]]></content>
+  </entry>
+  
+</feed>

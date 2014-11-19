@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: quick tips | Mark Struzinski]]></title>
+  <link href="http://markstruzinski.com/blog/categories/quick-tips/atom.xml" rel="self"/>
+  <link href="http://markstruzinski.com/"/>
+  <updated>2014-11-16T19:37:40-05:00</updated>
+  <id>http://markstruzinski.com/</id>
+  <author>
+    <name><![CDATA[Mark Struzinski]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[Quick Tip: TextExpander/Octopress New Code Block]]></title>
+    <link href="http://markstruzinski.com/blog/2013/02/25/quick-tip-textexpander-slash-octopress-new-code-block/"/>
+    <updated>2013-02-25T13:21:00-05:00</updated>
+    <id>http://markstruzinski.com/blog/2013/02/25/quick-tip-textexpander-slash-octopress-new-code-block</id>
+    <content type="html"><![CDATA[<p>Just a quick tip. This blog is built using <a href="http://octopress.org/" title="Octopress - a blogging framework for hackers">Octopress</a>. Octopress uses <a href="https://github.com/mojombo/jekyll" title="Jekyll static blog generator">Jekkyl</a> to create a static HTML site using markdown files for the content. I’ve been slowly building up some markdown specific <a href="http://www.smilesoftware.com/TextExpander/index.html" title="TextExpander home page">TextExpander</a> snippets and <a href="http://www.keyboardmaestro.com/" title="Keyboard Maestro">Keyboard Maestro</a> macros to make things easier.</p>
+
+<!-- more -->
+
+
+<p>I got some great Keyboard Maestro tips from Patrick Welker in <a href="http://rocketink.net/2013/01/markdown-maestro-guide.html" title="Ultimate Markdown Maestro Guide — RocketINK">this RocketInk article</a>. I’ve also been creating small TextExpander snippets make it easier to put in blocks of code and other commonly used elements.</p>
+
+<p>Here is one I recently created that I use a lot. When I type <strong>__ocb</strong>, TextExpander creates a code block and places the cursor in the center and ready to accept input. It also asks for the language in a drop down menu (I’ve only included language selections as needed), and a title for the code block. This adds the correct text in the initial line of the code block that will add syntax coloring and a title to the top of the code block.</p>
+
+<p>So, this (minus the underscores):</p>
+
+<p>__&#8220;` objective-c Test Code Block</p>
+
+<p>NSLog(@“Testing”);</p>
+
+<p>__&#8220;`</p>
+
+<p>turns into this:
+&#8220;` objective-c Test code block</p>
+
+<p>NSLog(@“Testing”);</p>
+
+<p>&#8220;`</p>
+
+<p><a href="http://cl.ly/180X3l3e0y32" title="CloudApp link">Here is a link</a> to the snippet.</p>
+
+<p>Let me know if you have any feedback/questions.</p>
+]]></content>
+  </entry>
+  
+</feed>

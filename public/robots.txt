@@ -1,0 +1,4 @@
+User-agent: *
+Disallow: 
+
+Sitemap: http://markstruzinski.com/sitemap.xml 

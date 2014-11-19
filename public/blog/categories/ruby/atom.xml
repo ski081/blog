@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: ruby | Mark Struzinski]]></title>
+  <link href="http://markstruzinski.com/blog/categories/ruby/atom.xml" rel="self"/>
+  <link href="http://markstruzinski.com/"/>
+  <updated>2014-11-16T19:37:40-05:00</updated>
+  <id>http://markstruzinski.com/</id>
+  <author>
+    <name><![CDATA[Mark Struzinski]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[Formatting Phone Numbers with TextExpander and Ruby]]></title>
+    <link href="http://markstruzinski.com/blog/2014/02/24/textexpander-phone-number-formatting/"/>
+    <updated>2014-02-24T06:59:00-05:00</updated>
+    <id>http://markstruzinski.com/blog/2014/02/24/textexpander-phone-number-formatting</id>
+    <content type="html"><![CDATA[<p>I&rsquo;ve been doing a lot of contact management and formatting of phone numbers into notes lately. I had a lot of frustration around formatting phone numbers copied and pasted from different sources.</p>
+]]></content>
+  </entry>
+  
+</feed>

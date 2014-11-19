@@ -1,0 +1,105 @@
+
+<!DOCTYPE HTML>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Quick Xcode 4 Tip: Deleting Derived Data to Rescue Code Completion  | Mark Struzinski</title>
+
+	<meta name="author" content="Mark Struzinski"> 
+	
+	<meta name="description" content="Quick Tip: I had an issue on a very large project in XCode. Starting 2 days ago, all of my syntax highlighting was completely broken. This is bad, &hellip;"> <meta name="keywords" content="">
+
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+	<link href="http://feedpress.me/markstruzinski" rel="alternate" title="Mark Struzinski" type="application/atom+xml">
+	<link rel="canonical" href="">
+	<link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+	<link href="/stylesheets/font-awesome.min.css" rel="stylesheet" type="text/css">
+	
+	<!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+	
+</head>
+
+
+
+<body>
+	<header id="header" class="inner"><h1>Mark Struzinski</h1>
+<nav id="main-nav"><ul>
+	<li><a href="/">Blog</a></li>
+	<li><a href="/archives">Archive</a></li>
+	<li><a href="/about">About</a></li>
+    <li><a href="/portfolio">Portfolio</a></li>
+</ul>
+</nav>
+
+
+</header>
+
+	<div id="content" class="inner"><article class="post">
+	<h2 class="title">Quick Xcode 4 Tip: Deleting Derived Data to Rescue Code Completion</h2>
+	<div class="entry-content"><h2>Quick Tip:</h2>
+
+<p>I had an issue on a very large project in XCode. Starting 2 days ago, all of my syntax highlighting was completely broken. This is bad, but even worse, my code completion worked only partially. I was getting autocomplete for local variables only. When calling framework methods with a lot of parameters, I rely pretty heavily on code completion. I tried all of the usual fixes.</p>
+
+<!-- more -->
+
+
+<p>This includes:
+- Doing a <strong>Project Clean (⌘⇧K)</strong>
+- Doing a <strong>Clean Build Folder(⌥⌘⇧K)</strong>
+- Restarting XCode</p>
+
+<p>None of these solutions fixed the issue. After some digging, I came across <a href="http://stackoverflow.com/questions/5365212/xcode-4-code-loses-syntax-coloring-when-importing-project-from-xcode-3/5368489#5368489">this StackOverflow Post</a> which pointed me in the right direction. Seems like sometimes the project index, which contains metadata used to display code completion suggestions (among other things), can become corrupted. The solution is to delete it. This will force XCode to regenerate it, which rebuilds the index.</p>
+
+<p>Here are the steps to delete your Derived Data folder:</p>
+
+<ol>
+<li>Go to XCode Settings <strong>(⌘,)</strong></li>
+<li>Click the Locations tab. You will see a screen like this:
+<img src="images/post_images/xcode-derived-data.png"></li>
+<li>Click the small arrow next to the location of the Derived Data folder. This will open the Finder to the location of the Derived Data for any XCode projects you currently have on your Mac.</li>
+<li>Find the one that starts with the name of your current project and delete it.</li>
+<li>You should immediately see XCode start to re-index your project.</li>
+</ol>
+
+
+<p>For me, after this process completed, I got all of my functionality back. Your mileage may vary, and please make sure you back everything up before deleting anything!</p>
+</div>
+
+
+<div class="meta">
+	<div class="date">
+
+
+
+
+
+
+
+
+  
+
+
+
+<time datetime="2011-09-30T07:50:00-04:00" pubdate data-updated="true">Sep 30th, 2011</time></div>
+	
+
+<div class="tags">
+
+	<a class='category' href='/blog/categories/tips/'>tips</a>, <a class='category' href='/blog/categories/xcode/'>xcode</a>
+
+</div>
+
+
+</div>
+</article>
+</div>
+	<footer id="footer" class="inner">Copyright &copy; 2014
+ Mark Struzinski 
+<br>
+Powered by Octopress.
+</footer>
+	
+
+</body>
+</html>

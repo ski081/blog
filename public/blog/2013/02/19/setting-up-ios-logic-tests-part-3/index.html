@@ -1,0 +1,203 @@
+
+<!DOCTYPE HTML>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Setting Up iOS Logic Tests [Part 3]  | Mark Struzinski</title>
+
+	<meta name="author" content="Mark Struzinski"> 
+	
+	<meta name="description" content="This is part 3 in a multi-part series on iOS unit testing and integration testing. In the last post, we discussed setting up SVProgressHUD. Magical &hellip;"> <meta name="keywords" content="">
+
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+	<link href="http://feedpress.me/markstruzinski" rel="alternate" title="Mark Struzinski" type="application/atom+xml">
+	<link rel="canonical" href="">
+	<link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+	<link href="/stylesheets/font-awesome.min.css" rel="stylesheet" type="text/css">
+	
+	<!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+	
+</head>
+
+
+
+<body>
+	<header id="header" class="inner"><h1>Mark Struzinski</h1>
+<nav id="main-nav"><ul>
+	<li><a href="/">Blog</a></li>
+	<li><a href="/archives">Archive</a></li>
+	<li><a href="/about">About</a></li>
+    <li><a href="/portfolio">Portfolio</a></li>
+</ul>
+</nav>
+
+
+</header>
+
+	<div id="content" class="inner"><article class="post">
+	<h2 class="title">Setting Up iOS Logic Tests [Part 3]</h2>
+	<div class="entry-content"><p>This is part 3 in a <a href="/blog/2013/02/01/unit-testing-series/">multi-part series</a> on iOS unit testing and integration testing. In the <a href="/blog/2013/02/13/setting-up-ios-logic-tests-part-2/">last post</a>, we discussed setting up <a href="https://github.com/samvermette/SVProgressHUD">SVProgressHUD</a>.</p>
+
+<h2>Magical Record</h2>
+
+<p><a href="http://magicalrecord.com/">Magical Record</a> is an excellent library that compliments the Core Data framework. I’m going to assume some knowledge of Core Data here. If you need a reference, the <a href="http://www.amazon.com/gp/product/1937785084/ref=as_li_qf_sp_asin_tl?ie=UTF8&amp;camp=1789&amp;creative=9325&amp;creativeASIN=1937785084&amp;linkCode=as2&amp;tag=markstruz0a-20">Core Data</a> book by Marcus Zarra is excellent, and just hit its 2nd edition. We are going to build out a very simple data model, with just one entity. This will allow us to set up the core data stack and verify that Magical Record is working.</p>
+
+<!-- more -->
+
+
+<p>Let’s get core data set up:</p>
+
+<ul>
+<li><strong>Add the Core Data framework in the Link Binary with Libraries step</strong>
+
+<ol>
+<li> Click the project node in the project navigator sidebar on the left</li>
+<li> Select the app target</li>
+<li> Select the Build Phases tab</li>
+<li> Open the Link Binary with Libraries list</li>
+<li> Click the <strong>‘+’</strong> button</li>
+<li> Search for <strong>‘Core Data’</strong></li>
+<li> Select <code>CoreData.framework</code></li>
+<li> Click the <strong>Add</strong> button</li>
+</ol>
+</li>
+</ul>
+
+
+<p><img src="/images/post_images/logictests-coredata-framework.png"></p>
+
+<ul>
+<li><p><strong>Add an import for Core Data to the precompiled header file to make Core Data available for the entire project</strong></p>
+
+<ol>
+<li> Open the precompiled header file - This file is usually placed in the <strong>Supporting Files</strong> group, and is named [project-name]-Prefix.pch</li>
+<li> Inside the <code>#ifdef __OBJC__</code> block, add <code>#import &lt;CoreData/CoreData.h&gt;</code>. This will make core data available throughout the project without having to import the framework everywhere it needs to be used.</li>
+</ol>
+</li>
+<li><p><strong>Add a data model to your app</strong></p>
+
+<ol>
+<li> Right click on the group in the project navigator that represents your app. For me, this is <strong>LogicTests</strong></li>
+<li> Select <strong>New File</strong></li>
+<li> Select Core Data => Data Model</li>
+<li> Select Create</li>
+<li> Your new data model should open in the graphical editor. By default, it will be named <strong>Model</strong></li>
+</ol>
+</li>
+<li><p><strong>Create a Person entity</strong></p>
+
+<ol>
+<li> On the bottom toolbar, click the <strong>Add Entity</strong> button</li>
+<li> A new entity will be created and the name will be editable immediately in the left sidebar. Type <strong>Person</strong> and hit Return</li>
+<li> We now have a new entity. We need to create attributes for it.</li>
+<li> Under the <strong>Attributes</strong> section, click the ‘+’ symbol. Name the new attribute <code>firstName</code> and make it a <code>String</code> type</li>
+<li> Repeat this process, and create a <code>lastName</code> property, also of type <code>String</code></li>
+<li> When you finish, your entity should look like this:</li>
+</ol>
+
+
+<p>  <img src="/images/post_images/logictests-person-entity.png"></p></li>
+<li><p><strong>Create an NSManagedObject subclass</strong><sup id='fnref:1'><a href='#fn:1' rel='footnote'>1</a></sup></p>
+
+<ol>
+<li> With your newly created <strong>Person</strong> entity selected, go to the menu bar, and select Editor => Create NSManagedObject Subclass</li>
+<li> Leave everything as-is, and click Create</li>
+<li> You should now have a <code>Person.h</code> and <code>Person.m</code> file in your project navigator. Inspecting these files will just show some standard property declarations in the header, and <code>@dynamic</code> declarations in the implementation.  Without diving too deep here, the <code>@dynamic</code> declarations simply tell the compiler that the implementation is there for <code>NSManagedObject</code> subclasses and prevent compiler warnings.</li>
+<li> Let’s take a sanity break here and hit <strong>⌘B</strong> to make sure the app builds.</li>
+</ol>
+</li>
+<li><p><strong>Use Magical Record to set up the Core Data stack</strong></p></li>
+</ul>
+
+
+<p>Magical Record is an excellent helper library that makes interacting with Core Data much easier. It adds syntax that allows you to perform common operations in 1 line of code instead of 3 or 4. Let’s add Magical Record into the mix and use it to bootstrap our Core Data stack.</p>
+
+<ol>
+<li>Add an import to your .pch file so that Magical Record is available project wide. My .pch file now looks like this:</li>
+</ol>
+
+
+<figure class='code'><figcaption><span>LogicTests-Prefix.pch</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='objective-c'><span class='line'>  <span class="cp">#import &lt;Availability.h&gt;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="cp">#define MR_SHORTHAND</span>
+</span><span class='line'>  <span class="cp">#ifdef __OBJC__</span>
+</span><span class='line'>      <span class="cp">#import &lt;UIKit/UIKit.h&gt;</span>
+</span><span class='line'>      <span class="cp">#import &lt;Foundation/Foundation.h&gt;</span>
+</span><span class='line'>      <span class="cp">#import &lt;CoreData/CoreData.h&gt;</span>
+</span><span class='line'>      <span class="cp">#import &quot;CoreData+MagicalRecord.h&quot;</span>
+</span><span class='line'>  <span class="cp">#endif</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>The <code>#define</code> statement allows you to use Magical Record calls without a prefix. Without this define, you would have to prefix all of your Magical Record calls with <code>MR_</code></li>
+<li><p>The <code>#import "CoreData+MagicalRecord.h"</code> statement adds categories to several Core Data classes, which allow you to use the Magical Record extensions</p></li>
+<li><p>In your app delegate, add the following statement to set up the core data stack:
+ <code>[MagicalRecord setupCoreDataStack];</code></p></li>
+<li>Build to make sure everything is wired up correctly and you get no compiler errors.</li>
+</ul>
+
+
+<p>Ok, now we’re all set up. Next, we need to create the unit test bundle and begin to meet the challenges of creating unit tests against our code.</p>
+
+<p>I’ve put my progress so far <a href="https://github.com/ski081/LogicTests">up on GitHub for reference</a>. Please feel free to check it out!</p>
+
+<div class="footnotes">
+    <ol>
+        <li id='fn:1'><p> I always create <code>NSManagedObject</code> subclasses. I prefer to use <a href="https://github.com/rentzsch/mogenerator">Mogenerator</a>. Mogenerator is a much more elegant and destruction-proof way of doing this, but for the sake of brevity, we’ll just use the built-in class generation from the Core Data modeler.
+<a href='#fnref:1' rev='footnote'>↩</a></p>
+</li>
+    </ol>
+</div>
+
+
+
+</div>
+
+
+<div class="meta">
+	<div class="date">
+
+
+
+
+
+
+
+
+  
+
+
+
+<time datetime="2013-02-19T13:24:00-05:00" pubdate data-updated="true">Feb 19th, 2013</time></div>
+	
+
+<div class="tags">
+
+	<a class='category' href='/blog/categories/unit-testing-series/'>unit testing series</a>
+
+</div>
+
+
+</div>
+</article>
+</div>
+	<footer id="footer" class="inner">Copyright &copy; 2014
+ Mark Struzinski 
+<br>
+Powered by Octopress.
+</footer>
+	
+
+</body>
+</html>

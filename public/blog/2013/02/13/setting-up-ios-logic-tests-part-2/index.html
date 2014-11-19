@@ -1,0 +1,125 @@
+
+<!DOCTYPE HTML>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Setting Up iOS Logic Tests [Part 2]  | Mark Struzinski</title>
+
+	<meta name="author" content="Mark Struzinski"> 
+	
+	<meta name="description" content="This is part 2 in a multi-part series on iOS unit testing and integration testing. In the last post, we discussed setting up the project and adding &hellip;"> <meta name="keywords" content="">
+
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+	<link href="http://feedpress.me/markstruzinski" rel="alternate" title="Mark Struzinski" type="application/atom+xml">
+	<link rel="canonical" href="">
+	<link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+	<link href="/stylesheets/font-awesome.min.css" rel="stylesheet" type="text/css">
+	
+	<!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+	
+</head>
+
+
+
+<body>
+	<header id="header" class="inner"><h1>Mark Struzinski</h1>
+<nav id="main-nav"><ul>
+	<li><a href="/">Blog</a></li>
+	<li><a href="/archives">Archive</a></li>
+	<li><a href="/about">About</a></li>
+    <li><a href="/portfolio">Portfolio</a></li>
+</ul>
+</nav>
+
+
+</header>
+
+	<div id="content" class="inner"><article class="post">
+	<h2 class="title">Setting Up iOS Logic Tests [Part 2]</h2>
+	<div class="entry-content"><p>This is part 2 in a <a href="/blog/2013/02/01/unit-testing-series/">multi-part series</a> on iOS unit testing and integration testing. In the <a href="/blog/2013/02/08/setting-up-ios-logic-tests/">last post</a>, we discussed setting up the project and adding some dependencies with CocoaPods.</p>
+
+<p>Today, I’m going to go through setting up some initial code to use the 3rd party libraries to make sure that the libraries are working. Then we’ll set up logic tests and see what breaks with CocoaPods (spoiler: compiler errors ahead!).</p>
+
+<!-- more -->
+
+
+<h2>SVProgressHUD</h2>
+
+<p>First, let’s hook up <a href="https://github.com/samvermette/SVProgressHUD">SVProgressHUD</a></p>
+
+<ol>
+<li>Open <code>ViewController.m</code> and import SVProgressHUD: <code>#import "SVProgressHUD.h”</code></li>
+<li>In <code>viewDidLoad</code>, create an SVProgressHUD indicator, then dismiss it after 2 seconds:</li>
+</ol>
+
+
+<figure class='code'><figcaption><span>ViewController.m</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class='objective-c'><span class='line'>  <span class="o">-</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="n">viewDidLoad</span><span class="p">{</span>
+</span><span class='line'>      <span class="p">[</span><span class="nb">super</span> <span class="n">viewDidLoad</span><span class="p">];</span>
+</span><span class='line'>      <span class="p">[</span><span class="n">SVProgressHUD</span> <span class="nl">showWithStatus</span><span class="p">:</span><span class="s">@&quot;Running...&quot;</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="kt">double</span> <span class="n">delayInSeconds</span> <span class="o">=</span> <span class="mf">2.0</span><span class="p">;</span>
+</span><span class='line'>      <span class="kt">dispatch_time_t</span> <span class="n">popTime</span> <span class="o">=</span> <span class="n">dispatch_time</span><span class="p">(</span><span class="n">DISPATCH_TIME_NOW</span><span class="p">,</span> <span class="p">(</span><span class="kt">int64_t</span><span class="p">)</span>    <span class="p">(</span><span class="n">delayInSeconds</span> <span class="o">*</span> <span class="n">NSEC_PER_SEC</span><span class="p">));</span>
+</span><span class='line'>      <span class="n">dispatch_after</span><span class="p">(</span><span class="n">popTime</span><span class="p">,</span> <span class="n">dispatch_get_main_queue</span><span class="p">(),</span> <span class="o">^</span><span class="p">(</span><span class="kt">void</span><span class="p">){</span>
+</span><span class='line'>          <span class="p">[</span><span class="n">SVProgressHUD</span> <span class="n">dismiss</span><span class="p">];</span>
+</span><span class='line'>      <span class="p">});</span>
+</span><span class='line'>    <span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>You should be able to run this code now and see a progress indicator with a spinner and the text “Running&hellip;.”. It should disappear after 2 seconds.</p>
+
+<p><img src="/images/post_images/logictests-svprogresshud-spinner.png"></p>
+
+<p>Great! This proves one of our CocoaPods libraries is communicating with the app’s main project and is working properly.</p>
+
+<p>Next we’ll move onto Core Data with Magical Record.</p>
+</div>
+
+
+<div class="meta">
+	<div class="date">
+
+
+
+
+
+
+
+
+  
+
+
+
+<time datetime="2013-02-13T15:02:00-05:00" pubdate data-updated="true">Feb 13th, 2013</time></div>
+	
+
+<div class="tags">
+
+	<a class='category' href='/blog/categories/unit-testing-series/'>unit testing series</a>
+
+</div>
+
+
+</div>
+</article>
+</div>
+	<footer id="footer" class="inner">Copyright &copy; 2014
+ Mark Struzinski 
+<br>
+Powered by Octopress.
+</footer>
+	
+
+</body>
+</html>

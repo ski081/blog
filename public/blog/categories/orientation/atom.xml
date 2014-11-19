@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: orientation | Mark Struzinski]]></title>
+  <link href="http://markstruzinski.com/blog/categories/orientation/atom.xml" rel="self"/>
+  <link href="http://markstruzinski.com/"/>
+  <updated>2014-11-16T19:37:40-05:00</updated>
+  <id>http://markstruzinski.com/</id>
+  <author>
+    <name><![CDATA[Mark Struzinski]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[Orientation Changes in iOS 6]]></title>
+    <link href="http://markstruzinski.com/blog/2013/03/11/orientation-changes-in-ios-6/"/>
+    <updated>2013-03-11T11:05:00-04:00</updated>
+    <id>http://markstruzinski.com/blog/2013/03/11/orientation-changes-in-ios-6</id>
+    <content type="html"><![CDATA[<p>In a current project, I had the need to have one specific view controller present its view in landscape orientation only. Pre-iOS 6, I would have overridden the <code>shouldAutoRotateToInterfaceOrientation</code> method and returned <code>UIInterfaceOrientationLandscape</code>. In iOS 6, this method is deprecated. I began researching how orientation issues should be handled going forward, and here is the way I made my specific scenario work.</p>
+
+<!-- more -->
+
+
+<p>In iOS 6, the system queries the <strong>topmost</strong> visible view controller to see if it should rotate. The viewcontroller can override 2 methods to answer this query correctly:</p>
+
+<ul>
+<li><code>supportedInterfaceOrientations:</code></li>
+<li><code>shouldAutoRotate</code></li>
+</ul>
+
+
+<p>It would seem simple enough to override these methods on each view controller that had special requirements for presentation to have them determine their orientation. The problem arose for me when I had a navigation controller thrown into the mix. Since technically the topmost view controller in a navigation stack is the navigation controller itself, iOS was ignoring the method overrides I had in place for the individual view controllers. It was sending the message directly to my UINavigationController, which did not provide the settings I needed.</p>
+
+<p>I solved this issue by subclassing UINavigationController and overriding the previously mentioned methods, then passing the results from the navigation controller down into the top view controller via the <code>topViewController</code> property. Here are the steps to accomplish this:</p>
+
+<ol>
+<li>Create a subclass of <code>UINavigationController</code></li>
+<li>Override the following methods:
+
+<ol>
+<li><code>-(UIInterfaceOrientation)preferredInterfaceOrientationForPresentation</code></li>
+<li><code>-(NSUInteger)supportedInterfaceOrientations</code></li>
+<li><code>-(BOOL)shouldAutorotate</code></li>
+</ol>
+</li>
+<li>Return the result of each of these operations by passing in the value from the result of calling that method on the topViewControllerof the UINavigationController</li>
+<li>Implement any or all of those methods specific to your needs on your UIViewController subclasses</li>
+<li>Make sure you are using your <code>UINavigationController</code> subclass in place of the standard <code>UINavigationController</code>
+
+<ol>
+<li>My project uses storyboards, so I simply specified my UINavigationController subclass in the Identity Inspector</li>
+</ol>
+</li>
+</ol>
+
+
+<p>Here is my implementation of the navigation controller subclass in its entirety:</p>
+
+<pre><code class="objective-c UINavigationController Subclass">
+    @implementation FMNavigationController
+
+    -(BOOL)shouldAutorotate{
+        return [self.topViewController shouldAutorotate];
+    }
+
+    -(NSUInteger)supportedInterfaceOrientations{
+        return [self.topViewController supportedInterfaceOrientations];
+    }
+
+    -(UIInterfaceOrientation)preferredInterfaceOrientationForPresentation{
+        return [self.topViewController preferredInterfaceOrientationForPresentation];
+    }
+
+    @end
+</code></pre>
+
+<p>Then, in my specific view controller that needs to be launched in landscape, I overrode this method and returned the appropriate value:</p>
+
+<pre><code class="objective-c View Controller Method Overrides">
+    #pragma mark - Rotation
+    -(NSUInteger)supportedInterfaceOrientations{
+        return UIInterfaceOrientationMaskLandscape;
+    }
+</code></pre>
+
+<p>That’s really all there was to it. The research to get this right took much longer than the implementation.</p>
+
+<p>Please contact me with any questions, and good luck.</p>
+]]></content>
+  </entry>
+  
+</feed>

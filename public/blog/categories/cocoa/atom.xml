@@ -1,0 +1,582 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: cocoa | Mark Struzinski]]></title>
+  <link href="http://markstruzinski.com/blog/categories/cocoa/atom.xml" rel="self"/>
+  <link href="http://markstruzinski.com/"/>
+  <updated>2014-11-16T19:37:40-05:00</updated>
+  <id>http://markstruzinski.com/</id>
+  <author>
+    <name><![CDATA[Mark Struzinski]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[Persisting Data Using the Plist Format: Part 2/2]]></title>
+    <link href="http://markstruzinski.com/blog/2012/02/23/persisting-data-using-the-plist-format-part-2-slash-2/"/>
+    <updated>2012-02-23T12:16:00-05:00</updated>
+    <id>http://markstruzinski.com/blog/2012/02/23/persisting-data-using-the-plist-format-part-2-slash-2</id>
+    <content type="html"><![CDATA[<p>This is a follow up to my [previous post]:<a href="http://markstruzinski.com/blog/2012/02/03/persisting-simple-data-using-the-plist-format/">part1</a> on persisting PList data to disk as a form of transient storage for data. This second part will just show an easy way to pull that data from disk and get it into memory in an easily usable format.</p>
+
+<p>All of our Plists are stored as dictionaries. The keys for the dictionaries are stored as constants in a code file (<code>Constants.h/.m</code>). This allows for compile time checking and keeps us from having to litter our code with magic strings when trying to access the values.</p>
+
+<!-- more -->
+
+
+<p>Here is a sample workflow to get this method up and running:</p>
+
+<h2>The PList Data</h2>
+
+<p>Assuming we have a plist that contains the following data:</p>
+
+<pre><code class="xml PList Data">&lt;xml version="1.0&amp;quot; encoding="UTF-8"&gt;
+&lt;DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd"&gt;
+&lt;plist version="1.0"&gt;
+&lt;dict&gt;
+    &lt;key&gt;firstName&lt;/key&gt;
+    &lt;string&gt;Mark&lt;/string&gt;
+&lt;/dict&gt;
+&lt;/plist&gt;
+</code></pre>
+
+<h2>Create a Constants File, and Always Use It</h2>
+
+<p>Create a Constants file, and add all keys to it as <code>const NSString</code>. Be strict and only reference these keys when attempting to access data from your NSDictionaries. Don’t shortcut and put the strings directly into your code. Here is an example of how I have this set up:</p>
+
+<h4>Constants.h</h4>
+
+<pre><code class="objective-c Constants Header">#import &lt;Foundation/Foundation.h&gt;;
+
+@interface Constants : NSObject
+
+extern NSString * const DICT_KEY_FIRST_NAME;
+
+@end
+</code></pre>
+
+<h4>Constants.m</h4>
+
+<pre><code class="objective-c Constants Implementation">#import "Constants.h";
+
+@implementation Constants
+
+NSString * const DICT_KEY_FIRST_NAME   = @"firstName";
+
+@end
+</code></pre>
+
+<h2>Add your Constants file to your pre-compiled headers file so it is available everywhere</h2>
+
+<p>Adding files to your pre-compiled headers makes them available everywhere in your project without having to import each specific class header in the file where you’re trying to use it. Use this convenience judiciously, and only for classes that you truly think you’ll need everywhere. I always include my Constants file in the pre-compiled header to ensure I can access it without having to import it everywhere.</p>
+
+<p>You can find your pre-compiled header file in the <strong>Supporting Files</strong> group in your project navigator in XCode (if you haven’t moved it). It is typically named <code>{projectname}-Prefix.pch</code>, where {projectname} is the name of your project. At the bottom of this file, you can add #import statements for the header fields you are interested in. Your file should look something like this:</p>
+
+<pre><code class="objective-c Prefix Header">
+#import &lt;Availability.h&gt;
+
+#ifndef __IPHONE_3_0
+#warning &amp;quot;This project uses features only available in iOS SDK 3.0 and later.&amp;quot;
+#endif
+
+#ifdef __OBJC__
+    #import &lt;UIKit/UIKit.h&gt;
+    #import &lt;Foundation/Foundation.h&gt;
+    #import &lt;CoreData/CoreData.h&gt;
+    #import "Constants.h"
+#endif
+</code></pre>
+
+<p>The import statement you’re interested in the last one. Make sure you add it inside the <code>#ifdef__OBJC__</code> block.</p>
+
+<p>This adds an #import statement for each file at compile time which includes these files throughout your entire project. It will also update XCode’s autocomplete indexing so that you are able to use autocomplete for the code on the imported files.</p>
+
+<h2>Pull your file from disk, and use the constants defined</h2>
+
+<p>Here is an example of how we could wrap this all up and pull some data from a plist file already on disk:</p>
+
+<pre><code class="objective-c Retrieve Data">NSString *filepath = [self convenienceMethodToGetFilePathForPlist];
+NSDictionary *resultsDict = [NSDictionary dictionaryWithContentsOfFile:filepath];
+NSString *firstName = [resultsDict objectForKey:DICT_KEY_FIRST_NAME];
+NSLog(@"First Name: %@",firstName);
+</code></pre>
+
+<p>Note above that you will need a way to get the plist file path before being able to access it. Also note that I prefix the string constant with <code>DICT_KEY</code>. I do this so that as my constants file grows, I can easily locate the value I’m looking for by typing the prefix I’m looking for.</p>
+
+<p>Well, that wraps up this segment. As a caveat here, I’d like to mention that this data storage methodology, in my opinion, would not scale to larger data sets. You should definitely consider using [Core Data]:<a href="https://developer.apple.com/library/mac/#documentation/cocoa/conceptual/coredata/cdprogrammingguide.html">coredata</a> for the majority of your data storage scenarios. We decided to use the PList format in this case because the data was transient, and was going to be wiped out on each subsequent change to it.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Persisting Simple Data Using the Plist Format: Part 1/1]]></title>
+    <link href="http://markstruzinski.com/blog/2012/02/03/persisting-simple-data-using-the-plist-format/"/>
+    <updated>2012-02-03T04:16:00-05:00</updated>
+    <id>http://markstruzinski.com/blog/2012/02/03/persisting-simple-data-using-the-plist-format</id>
+    <content type="html"><![CDATA[<p>Recently, we had the need to save some simple transient data to disk. For data of any significant size, we would have looked at Core Data for our persistence. In this case, we decided to use the PList format to save data to disk and pull it back off. We went through several ideas to store this data.</p>
+
+<p>Some of the ideas we considered for persistence included:</p>
+
+<ul>
+<li>Core Data</li>
+<li>JSON saved in a flat file format</li>
+<li>PList saved directly to disk from a Cocoa object such as an NSArray or NSDictionary</li>
+</ul>
+
+
+<!-- more -->
+
+
+<p>Because of our specific set of requirements and our hardware stack, we opted to go with the PList format. Our main driver for this decision was the amount of control we have over the response format from the server. Since we control our servers and their output, we are able to specify PList as a return type. We use the excellent <a href="https://github.com/AFNetworking/AFNetworking">AFNetworking</a> library to perform our networking tasks.</p>
+
+<p>The AFNetworking library has a request named <a href="http://engineering.gowalla.com/AFNetworking/Classes/AFPropertyListRequestOperation.html">AFPropertyListRequestOperation</a>.<sup id='fnref:1'><a href='#fn:1' rel='footnote'>1</a></sup> This operation will take an NSURLRequest and return an <code>id</code> that can be cast to a native Cocoa object, such as an NSDictionary or NSArray. Because we know the object’s return structure, we directly cast our object and move on to processing it. From there, it is just a matter of using the <code>writeToFile:Atomically</code> method to persist to disk.</p>
+
+<p>Here is an example workflow:</p>
+
+<pre><code class="objective-c Save PList">NSString *urlString = @"http://api.responder?format=plist;"
+NSURLRequest *urlRequest = [NSURLRequest requestWithURL:[NSURL urlWithString:urlString]];
+    AFPropertyListRequestOperation *operation = 
+    [AFPropertyListRequestOperation propertyListRequestOperationWithRequest:urlString success:^(NSURLRequest *request, NSHTTPURLResponse *response, id propertyList) {
+            // Cache the response
+        NSDictionary *responseDict = (NSDictionary *)propertyList;
+        NSArray *pathArray = NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES);
+        NSString *cachesPath = [pathArray lastObject];
+        NSString *filePath = [NSString pathWithComponents:[NSArray arrayWithObjects:cachesPath,@&amp;quot;responseDict.plist&amp;quot;,nil]];
+        BOOL success = [responseDict writeToFile:filePath atomically:YES];
+        if(!success){
+            // Handle error
+        }        
+    } failure:^(NSURLRequest *request, NSHTTPURLResponse *response, NSError *error, id propertyList) {
+        NSLog(@&amp;quot;API Call failure: %@&amp;quot;,[error localizedDescription]);
+    }];
+</code></pre>
+
+<p>One caveat here is to be careful that your dictionary is properly formatted when being returned from the server, and when attempting to save to disk. Initially, we had some bugs when nulls were encountered as a response from the server for specific values. The server parsing logic would simply not generate a value for the key if the value was null. In PList format, this is unacceptable syntax. If you tried to save this to disk, the call would fail and return NO from the <code>writeToFile: method</code>.</p>
+
+<p>For my next post, I’ll do a quick follow up on how to pull the data back off of disk and get it into a usable format in memory.</p>
+
+<p><div class="footnotes">
+	<ol>
+		<li id='fn:1'><p><a href='#fnref:1' rev='footnote'>↩</a></p>
+</li>
+	</ol>
+</div>
+</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[On Discovering New APIs]]></title>
+    <link href="http://markstruzinski.com/blog/2011/06/11/on-discovering-new-apis/"/>
+    <updated>2011-06-11T22:56:00-04:00</updated>
+    <id>http://markstruzinski.com/blog/2011/06/11/on-discovering-new-apis</id>
+    <content type="html"><![CDATA[<p>In working with any programming language, I&rsquo;ve always found that if you seem to be fighting things to get work done, you&rsquo;re probably doing it wrong. This is especially true in Cocoa Touch. When I was first learning the frameworks, I read a lot of blogs, books, and any other materials I could get my hands on. Almost everyone said something to the effect of <em>&ldquo;You don&rsquo;t get it? Read the docs again.&rdquo;</em></p>
+
+<p>It took me a while to realize that Apple has excellent documentation. It&rsquo;s gotten a lot better in the Microsoft world, but in the C# 2.0 and 3.5 days, you would frequently go in search of a particular framework method or property, and come across a blank page that was obviously generated by some kind of tool. Or, my favorite was when you had a property that was named something like ToolsArray, and the description would contain verbiage like &ldquo;The array that holds the tools&rdquo;.</p>
+
+<!-- more -->
+
+
+<p>Apple has excellent documentation that gives common sense user cases, detailed definitions, and, in most cases, real world usage examples. I was reading the excellent new book <a href="http://pragprog.com/book/cdirec/ios-recipes">iOS Recipes</a> <a href="http://www.appleoutsider.com">Matt Drance</a> and <a href="http://twitter.com/#!/pawpoise">Paul Warren</a>, and discovered a new gem. This one is on the UserDefaults class.</p>
+
+<p>I use the UserDefaults class in a few places in my apps, mostly to hold and maintain state, such as if the app has been launched, if the user has been registered, etc. I always found myself writing guard code like this:</p>
+
+<pre><code class="objective-c Guard Code">BOOL appWasLoaded = NO;
+NSUserDefaults *standardDefaults = [NSUserDefaults standardDefaults];
+if([defaults objectForKey:@"appLoadedKey"]{
+    appWasLoaded = [defaults boolForKey:@"appLoadedKey"];
+}
+</code></pre>
+
+<p>There is a way to ensure user defaults have some pre-configured settings, which will reduce some of the redundancy in testing that user settings key/value pairs exist. This is accomplished using the following method call on the user defaults:</p>
+
+<pre><code class="objective-c Register Defaults">[[NSUserDefaults standardUserDefaults] registerDefaults:defaults];
+</code></pre>
+
+<p>When you make this method call, the defaults variable is an NSDictionary that contains they keys and values you want to set as initial defaults. The best part about this particular method, though, is that it will only set the values in user defaults if they don&rsquo;t already exist. What I have been doing to set these initial defaults is to create a .plist file that includes my default values. I pass this into the code as a dictionary, then call the registerDefaults method on startup to provide the default values at runtime. Here is a quick example:</p>
+
+<p>My PList looks like this:</p>
+
+<pre><code class="xml Plist    ">    &lt;?xml version="1.0" encoding="UTF-8"?&gt;
+    &lt;!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd"&gt;
+    &lt;plist version="1.0"&gt;
+        &lt;dict&gt;
+            &lt;key&gt;Test&lt;/key&gt;
+            &lt;string&gt;TestValue&lt;/string&gt;
+        &lt;/dict&gt;
+    &lt;/plist&gt;
+</code></pre>
+
+<pre><code class="objective-c Defaults">    NSDictionary *defaultValues = 
+        [NSDictionary dictionaryWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"defaultValues" 
+                                                                                   ofType:@"plist"]];
+    [[NSUserDefaults standardUserDefaults] registerDefaults:defaultValues];
+</code></pre>
+
+<p>After this point, calling</p>
+
+<pre><code class="objective-c User Defaults">[[NSUserDefaults standardUserDefaults] stringForKey:@"Test"] 
+</code></pre>
+
+<p>will get you the string &ldquo;TestValue&rdquo;, even if you haven&rsquo;t initialized it somewhere else in your code.</p>
+
+<p>For a full rundown, make sure you check out the <a href="http://developer.apple.com/library/mac/#documentation/Cocoa/Conceptual/UserDefaults/Tasks/UsingDefaults.html">official documentation</a>.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Using NSXMLParser]]></title>
+    <link href="http://markstruzinski.com/blog/2010/06/07/using-nsxmlparser/"/>
+    <updated>2010-06-07T23:34:00-04:00</updated>
+    <id>http://markstruzinski.com/blog/2010/06/07/using-nsxmlparser</id>
+    <content type="html"><![CDATA[<p>This is my first stab at an iPhone project. I&rsquo;m writing an app that consumes an RSS feed and parses it to retrieve a few bits of information for display on the screen. This is my first attempt at an implementation. Coming from a .NET background, it is quite a paradigm shift when switching to the heavily convention based world of Cocoa    development.</p>
+
+<p>If I was writing this app in .NET, I&rsquo;d go out looking for the proper class libraries to parse the XML and begin framing out a class to perform all the functions I needed to populate an object to be   persisted to the UI.</p>
+
+<!-- more -->
+
+
+<p>When researching the best way to do this, I found 2 prevalent methods of parsing XML in Cocoa:</p>
+
+<ul>
+<li><a href="https://developer.apple.com/library/mac/#documentation/Cocoa/Reference/Foundation/Classes/NSXMLParser_Class/Reference/Reference.html">NSXMLParser</a></li>
+<li><a href="https://github.com/TouchCode/TouchXML">Touch XML</a></li>
+</ul>
+
+
+<p>I decided to go with NSXMLParser because it seemed like the path of least friction to get started with. NSXMLParser is a stream based reader. It basically reads the entire XML tree character by character and fires off events via delegate calls when it encounters useful information. I found this model very easy to use. After some trial and error, I&rsquo;ve got it working well for my current project.</p>
+
+<p>I am parsing the xml feed for <a href="www.woot.com/salerss.aspx">Woot.com</a>. The following is an abbreviated snippet of the elements I am interested in. The actual feed has a lot more info in it, but this should give you a feel for the structure:</p>
+
+<pre><code class="xml API Return Data">    &lt;channel&gt;
+        &lt;copyright /&gt;
+        &lt;description&gt;Woot! - One Day, One Deal&lt;/description&gt;
+        &lt;docs&gt;http://www.rssboard.org/rss-specification&lt;/docs&gt;
+        &lt;generator&gt;Oppositional.Syndication, 1.0.0.0, http://   www.oppositionallydefiant.com/&lt;/generator&gt;
+        &lt;item&gt;
+        &lt;description&gt;[Removed for brevity]&lt;/description&gt;
+        &lt;link&gt;http://www.woot.com/&lt;/link&gt;
+        &lt;title&gt;Dyson DC24 Blueprint Limited Edition&lt;/title&gt;
+        &lt;woot:price xmlns:woot="http://www.woot.com/"&gt;$279.99&lt;/woot:price&gt;
+        &lt;woot:soldout xmlns:woot="http://www.woot.com/"&gt;False&lt;/woot:soldout&gt;
+    &lt;woot:wootoff xmlns:woot="http://www.woot.com/"&gt;False&lt;/woot:wootoff&gt;
+        &lt;woot:purchaseurl xmlns:woot="http://www.woot.com/"&gt;http://www.woot.com/WantOne.aspx?id=e94aa72d-5860-4f9b-bab2-42211de2f4cc&lt;/woot:purchaseurl&gt;
+        &lt;woot:thumbnailimage xmlns:woot="http://www.woot.com/"&gt;http://sale.images.woot.com/Dyson_DC24_Blueprint_Limited_EditionbklThumbnail.jpg&lt;/woot:thumbnailimage&gt;
+        &lt;woot:substandardimage xmlns:woot="http://www.woot.com/"&gt;http://sale.images.woot.com/Dyson_DC24_Blueprint_Limited_EditionxxcShoppingYahoo.jpg&lt;/woot:substandardimage&gt;
+        &lt;woot:standardimage xmlns:woot="http://www.woot.com/"&gt;http://sale.images.woot.com/Dyson_DC24_Blueprint_Limited_Editionm32Standard.jpg&lt;/woot:standardimage&gt;
+        &lt;woot:detailimage xmlns:woot="http://www.woot.com/"&gt;http://sale.images.woot.com/Dyson_DC24_Blueprint_Limited_Edition98lDetail.jpg&lt;/woot:detailimage&gt;
+        &lt;woot:shipping xmlns:woot="http://www.woot.com/"&gt;$5 shipping&lt;/woot:shipping&gt;
+        &lt;/item&gt;
+    &lt;/channel&gt;
+</code></pre>
+
+<h3>Defining the Model Object</h3>
+
+<p>The first thing I did was create a model object which would encapsulate the element values from the rss feed that I was interested in. Here is the code for the class:</p>
+
+<h4>SaleItem.h</h4>
+
+<pre><code class="objective-c Interface File">    #import &lt;Foundation/Foundation.h&gt;
+
+    @interface SaleItem : NSObject {
+        NSString *itemTitle;
+        NSString *itemPrice;
+        NSString *itemThumbnaillUrl;
+        NSString *itemSubstandardImageUrl;
+        NSString *itemStandardImageUrl;
+        NSString *itemDetailImageUrl;
+        NSString *itemDescription;
+        NSString *itemShippingCost;
+        NSString *itemSaleUrl;
+
+        BOOL isWootOff;
+    }
+
+    @property (nonatomic, retain) NSString *itemTitle;
+    @property (nonatomic, retain) NSString *itemPrice;
+    @property (nonatomic, retain) NSString *itemThumbnaillUrl;
+    @property (nonatomic, retain) NSString *itemSubstandardImageUrl;
+    @property (nonatomic, retain) NSString *itemStandardImageUrl;
+    @property (nonatomic, retain) NSString *itemDetailImageUrl;
+    @property (nonatomic, retain) NSString *itemDescription;
+    @property (nonatomic, retain) NSString *itemShippingCost;
+    @property (nonatomic, retain) NSString *itemSaleUrl;
+
+    @property (nonatomic, assign) BOOL isWootOff; 
+
+    @end
+</code></pre>
+
+<h4>SaleItem.m</h4>
+
+<pre><code class="objective-c Implementation File">    #import "SaleItem.h"
+
+    @implementation SaleItem
+
+    @synthesize itemTitle;
+    @synthesize itemPrice;
+    @synthesize itemThumbnaillUrl;
+    @synthesize itemSubstandardImageUrl;
+    @synthesize itemStandardImageUrl;
+    @synthesize itemDetailImageUrl;
+    @synthesize itemDescription;
+    @synthesize itemShippingCost;
+    @synthesize itemSaleUrl;
+    @synthesize isWootOff;
+
+    -(void) dealloc{
+        [itemTitle release];
+        [itemPrice release];
+        [itemThumbnaillUrl release];
+        [itemSubstandardImageUrl release];
+        [itemStandardImageUrl release];
+        [itemDetailImageUrl release];
+        [itemDescription release];
+        [itemShippingCost release];
+        [itemSaleUrl release];  
+
+        [super dealloc];
+    }
+
+    @end
+</code></pre>
+
+<h3>Defining a Class to Reference Constants</h3>
+
+<p>Next, to make my life easier, I defined a class to define some constants. These constants define the string values I will be searching for as I parse the XML.</p>
+
+<pre><code class="objective-c Constants Header">####Constants.h
+    #import &lt;Foundation/Foundation.h&gt;
+
+    extern NSString * const ITEM;
+    extern NSString * const TITLE;
+    extern NSString * const PRICE;
+    extern NSString * const THUMBNAIL_IMAGE;
+    extern NSString * const SUBSTANDARD_IMAGE;
+    extern NSString * const STANDARD_IMAGE;
+    extern NSString * const DETAIL_IMAGE;
+    extern NSString * const DESCRIPTION;
+    extern NSString * const IS_WOOTOFF;
+    extern NSString * const SHIPPING_PRICE;
+    extern NSString * const SALE_URL;
+
+    @interface Constants : NSObject {
+
+    }
+</code></pre>
+
+<h4>Constants.m</h4>
+
+<pre><code class="objective-c Constants Implementation">    #import "Constants.h"
+    @implementation Constants
+        NSString * const ITEM               = @"item";
+        NSString * const TITLE              = @"title";
+        NSString * const PRICE              = @"woot:price";
+        NSString * const THUMBNAIL_IMAGE    = @"woot:thumbnailimage";
+        NSString * const SUBSTANDARD_IMAGE  = @"woot:substandardimage";
+        NSString * const STANDARD_IMAGE     = @"woot:standardimage";
+        NSString * const DETAIL_IMAGE       = @"woot:detailimage";
+        NSString * const DESCRIPTION        = @"description";
+        NSString * const IS_WOOTOFF         = @"woot:wootoff";
+        NSString * const SHIPPING_PRICE     = @"woot:shipping";
+        NSString * const SALE_URL           = @"woot:purchaseurl";
+    @end
+</code></pre>
+
+<h3>Creating the Worker Class</h3>
+
+<p>NSXMLParser works using delegate callbacks to let you hook into events that you are interested in. Most of the examples I found online used delegate methods right inside the viewcontroller to accomplish the parsing. Since I have several views which are going to take advantage of this functionality, I decided to split it out into a worker class. Let&rsquo;s construct this class (I named it XMLParser) piece by piece:</p>
+
+<h4>XMLParser.h</h4>
+
+<pre><code class="objective-c XMLParser Header">    #import &lt;UIKit/UIKit.h&gt;
+
+    @class Constants; //Forward declaration of the Constants class
+    @class SaleItem;  //Forward declaration of the SaleItem model object class
+
+    @interface XMLParser : NSObject {
+        NSMutableString *currentValue; //This will hold element values as we build them     piece by piece
+        BOOL itemElementInProgress; // This will determine if we are currently parsing  an element
+        SaleItem *saleItem; // Instance of our model object
+    }
+
+    @property (nonatomic, retain) NSMutableString *currentValue;
+    @property (nonatomic, retain) SaleItem *saleItem;
+    @property BOOL itemElementInProgress;
+
+    - (BOOL) parse; // This performs the parsing of the file
+    - (id)initWithSaleItem:(SaleItem *)aSaleItem; // Custom initializer
+    - (void) trimString; // Small convenience method to remove whitespace
+
+    @end
+</code></pre>
+
+<h4>Building XMLParser.m</h4>
+
+<p>Lets start with our basic shell:</p>
+
+<pre><code class="objective-c XML Parser Implementation">    #import "Constants.h"
+    #import "SaleItem.h"
+    #import "XMLParser.h"
+
+    @implementation XMLParser
+        // Synthesize our properties
+        @synthesize currentValue;
+        @synthesize itemElementInProgress;
+        @synthesize saleItem;
+
+        // Make sure objects are released
+        -(void)dealloc{
+            [currentValue release];
+            [saleItem release];
+            [super dealloc];
+        }
+
+    @end
+</code></pre>
+
+<p>Now, let&rsquo;s create the initializer. Add the following code directly after the property
+@synthesize calls:</p>
+
+<pre><code class="objective-c Initializer">        // Sets the saleItem property to a SaleItem object passed in 
+        - (id)initWithSaleItem:(SaleItem *)aSaleItem{
+            if (self = [super init]) {
+                [self setSaleItem:aSaleItem];
+                [self setItemElementInProgress:NO];
+            }
+
+            return self;
+        }
+</code></pre>
+
+<p>I am initializing the class this way so I can populate the SaleItem inside of XMLParser and still have access to it from the calling class (a ViewController) when I&rsquo;m done parsing.</p>
+
+<p>Before we get into how to instantiate NSXMLParser and use it to parse a file, let&rsquo;s set up the delegate methods to get the data we need out of the file.</p>
+
+<p>I usually put delegate methods at the bottom of the file, right after a <a href="http://cocoasamurai.blogspot.com/2006/09/tip-pragma-mark-organizing-your-source.html">#pragma mark</a> definition to delineate this group of methods from the rest of the code. Hop down to the bottom of XMLParser.m, and place this code just prior to @end:</p>
+
+<pre><code class="objective-c Delegate Method">    #pragma mark NSXMLParser Delegate Calls
+    // This method gets called every time NSXMLParser encounters a new element
+    -(void)parser:(NSXMLParser *)parser didStartElement:(NSString *)elementName 
+        namespaceURI:(NSString *)namespaceURI 
+        qualifiedName:(NSString *)qualifiedName 
+        attributes:(NSDictionary *)attributeDict{
+            // If element is named "item", set bool to true so we know
+            // we are inside the element in other methods. This is needed
+            // because "item" contains most of the data we need
+            if ([elementName isEqualToString:ITEM]) {
+                [self setItemElementInProgress:YES];
+            }
+        }
+
+    // This method gets called for every character NSXMLParser finds.
+        -(void)parser:(NSXMLParser *)parser foundCharacters:(NSString *)string{
+            // If currentValue doesn't exist, initialize and allocate
+            if (!currentValue) {
+                currentValue = [[NSMutableString alloc] init];
+            }
+
+            // Append the current character value to the running string
+            // that is being parsed
+            [currentValue appendString:string];
+        }
+</code></pre>
+
+<p>The final delegate method is fired when NSXMLParser reaches the end of an element. Here is the place we can be sure we have gotten the full value of the element, and can now persist that data to our model object for use. right after the foundCharacters method, add this method:</p>
+
+<pre><code class="objective-c Delegate Method">    // This method is called whenever NSXMLParser reaches the end of an element
+    -(void)parser:(NSXMLParser *)parser didEndElement:(NSString *)elementName
+                                        namespaceURI:(NSString *)namespaceURI 
+                                        qualifiedName:(NSString *)qName{
+    [self trimString];  // Remove whitespace with a convenience method
+
+        if ([elementName isEqualToString:ITEM]) {
+            [self setItemElementInProgress:NO];  // If we are currently on the "item"   element, then do not save value
+        }
+
+        // If we are processing an element inside of "item", 
+        // then determine if we need to save the value  
+        if (self.itemElementInProgress) {
+            // Now check the element id against the ones we are 
+            // interested in (using the Constants class values).
+            // If we find one, set the corresponding property on the 
+            // SaleItem object
+            if ([elementName isEqualToString:TITLE]) {
+                [[self saleItem] setItemTitle:currentValue];
+            }
+
+            if ([elementName isEqualToString:PRICE]) {
+                [[self saleItem] setItemPrice:currentValue];
+            }
+
+            if ([elementName isEqualToString:THUMBNAIL_IMAGE]) {
+                [[self saleItem] setItemThumbnaillUrl:currentValue];
+            }
+
+            if ([elementName isEqualToString:SUBSTANDARD_IMAGE]) {
+                [[self saleItem] setItemSubstandardImageUrl:currentValue];
+            }
+
+            if ([elementName isEqualToString:STANDARD_IMAGE]) {
+                [[self saleItem] setItemStandardImageUrl:currentValue];
+            }
+
+            if ([elementName isEqualToString:DETAIL_IMAGE]) {
+                [[self saleItem] setItemDetailImageUrl:currentValue];
+            }
+
+            if ([elementName isEqualToString:DESCRIPTION]) {
+                [[self saleItem] setItemDescription:currentValue];
+            }
+
+            if ([elementName isEqualToString:SHIPPING_PRICE]) {
+                [[self saleItem] setItemShippingCost:currentValue];
+            }
+
+            if ([elementName isEqualToString:SALE_URL]) {
+                [[self saleItem] setItemSaleUrl:currentValue];
+            }
+        }
+
+        [currentValue release];
+        currentValue = nil;
+    }
+</code></pre>
+
+<h3>The Parse Method</h3>
+
+<p>Finally, the whole process is started by the parse method:</p>
+
+<pre><code class="objective-c Parse Method">            - (BOOL)parse{
+            // Create and initialize an NSURL with the RSS feed address and use it to   instantiate NSXMLParser
+            NSURL *url = [[NSURL alloc] initWithString:@"http://www.woot.com/salerss.aspx"];
+            NSXMLParser *parser = [[NSXMLParser alloc] initWithContentsOfURL:url];
+
+            // Tell NSXMLParser that this class is its delegate
+            [parser setDelegate:self];
+
+            // Kick off file parsing
+            [parser parse];
+
+            // Clean up
+            [url release];
+
+            [parser setDelegate:nil];
+            [parser release];
+            return YES;
+        }
+</code></pre>
+
+<h3>Final Notes</h3>
+
+<p>Some final thoughts on the methodology I am using:</p>
+
+<ul>
+<li>I want to get rid of the if statements and use Key-Value coding to set property values. I haven&rsquo;t gotten the chance to refactor this</li>
+<li>I am very new to Cocoa, and any suggestions/comments are welcome and encouraged!</li>
+</ul>
+
+]]></content>
+  </entry>
+  
+</feed>

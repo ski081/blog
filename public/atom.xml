@@ -1,0 +1,1368 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Mark Struzinski]]></title>
+  <link href="http://markstruzinski.com/atom.xml" rel="self"/>
+  <link href="http://markstruzinski.com/"/>
+  <updated>2014-11-16T19:37:40-05:00</updated>
+  <id>http://markstruzinski.com/</id>
+  <author>
+    <name><![CDATA[Mark Struzinski]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[CocoaConf Boston 2014]]></title>
+    <link href="http://markstruzinski.com/blog/2014/11/16/cocoaconf-boston-2014/"/>
+    <updated>2014-11-16T07:12:38-05:00</updated>
+    <id>http://markstruzinski.com/blog/2014/11/16/cocoaconf-boston-2014</id>
+    <content type="html"><![CDATA[<p>I attended the Boston stop of the <a href="http://cocoaconf.com">CocoaConf</a> tour this year. As always, it was a quality experience. I learned a ton, and I&rsquo;m still processing all the valuable information that was crammed into my brain. The Klein family puts together a great mix of technical content, community interaction, and fun events.</p>
+
+<p>The speakers were top notch. I got to meet <a href="https://twitter.com/subdigital">Ben Scheirman</a> of <a href="https://www.nsscreencast.com">NSScreenCast</a> fame, who I&rsquo;ve admired for a long time. Both of his talks were packed full of useful information. <a href="https://twitter.com/savinola">Laura Savinola</a> had my favorite session, which was basically 45 straight minutes of Xcode tips, tricks, and hacks. (Lots of note-taking in that one!)</p>
+
+<p>The event is paced so that the technical content is buffered with 15 minute breaks, less technical talks, and meals in-between. In my opinion, this prevents your brain from being completely overwhelmed with technical content.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Formatting Phone Numbers with TextExpander and Ruby]]></title>
+    <link href="http://markstruzinski.com/blog/2014/02/24/textexpander-phone-number-formatting/"/>
+    <updated>2014-02-24T06:59:00-05:00</updated>
+    <id>http://markstruzinski.com/blog/2014/02/24/textexpander-phone-number-formatting</id>
+    <content type="html"><![CDATA[<p>I&rsquo;ve been doing a lot of contact management and formatting of phone numbers into notes lately. I had a lot of frustration around formatting phone numbers copied and pasted from different sources.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Unit Testing Patterns for Asynchronous Networking Communications]]></title>
+    <link href="http://markstruzinski.com/blog/2013/10/10/unit-testing-patterns-for-asynchronous-networking-communications/"/>
+    <updated>2013-10-10T06:59:00-04:00</updated>
+    <id>http://markstruzinski.com/blog/2013/10/10/unit-testing-patterns-for-asynchronous-networking-communications</id>
+    <content type="html"><![CDATA[<p>A common issue I always run into is how to test asynchronous methods, especially networking calls. I used test the result of the calls, such as the parsing of return data, because testing the entire method proved impossible. I recently read an <a href="http://www.objc.io/issue-2/async-testing.html">article</a> from the excellent <a href="http://www.objc.io/">objc.io</a> publication on asynchornous testing. By combining the patterns used in this article with some refactoring, I finally have my networking code under unit tests. Here&rsquo;s what I did.</p>
+
+<!-- more -->
+
+
+<h3>Architecture</h3>
+
+<p>First, I will detail how my app was architected <strong>prior</strong> to setting up unit tests. I use <a href="https://github.com/AFNetworking/AFNetworking">AFNetworking</a> to handle all API calls, and make use of the <a href="http://engineering.gowalla.com/AFNetworking/Classes/AFHTTPClient.html">AFHTTPClient</a> to centralize all calls to a specific base URL. The HTTPClient would be a singleton, and each service call would be passed a typed return block to execute on completion or failure. Here is an example for a service call to get a list of items:</p>
+
+<p>In my header:</p>
+
+<figure class='code'><figcaption><span>APIClient.h</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='objective-c'><span class='line'><span class="k">@interface</span> <span class="nc">APIClient</span> : <span class="nc">AFHTTPClient</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">typedef</span> <span class="nf">void</span><span class="p">(</span><span class="o">^</span><span class="n">ListItemsRequestReturnBlock</span><span class="p">)(</span><span class="kt">BOOL</span> <span class="n">success</span><span class="p">,</span><span class="bp">NSArray</span> <span class="o">*</span><span class="n">itemsArray</span><span class="p">,</span><span class="bp">NSError</span> <span class="o">*</span><span class="n">error</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">-(</span><span class="kt">void</span><span class="p">)</span><span class="nf">sendItemsRequestForGroupId:</span><span class="p">(</span><span class="bp">NSNumber</span> <span class="o">*</span><span class="p">)</span><span class="nv">groupId</span> <span class="nf">completionBlock:</span><span class="p">(</span><span class="n">ListItemsRequestReturnBlock</span><span class="p">)</span><span class="nv">itemsReturnBlock</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">@end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>And the implementation:</p>
+
+<figure class='code'><figcaption><span>APIClient.m</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+</pre></td><td class='code'><pre><code class='objective-c'><span class='line'><span class="p">-(</span><span class="kt">void</span><span class="p">)</span><span class="nf">sendItemsRequestForGroupId:</span><span class="p">(</span><span class="bp">NSNumber</span> <span class="o">*</span><span class="p">)</span><span class="nv">groupId</span> <span class="nf">completionBlock:</span><span class="p">(</span><span class="n">ListItemsRequestReturnBlock</span><span class="p">)</span><span class="nv">itemsReturnBlock</span><span class="p">{</span>
+</span><span class='line'>    <span class="n">Group</span> <span class="o">*</span><span class="n">group</span> <span class="o">=</span> <span class="p">[</span><span class="n">Group</span> <span class="nl">findFirstByAttribute</span><span class="p">:</span><span class="n">GroupAttributes</span><span class="p">.</span><span class="n">groupID</span>
+</span><span class='line'>                                        <span class="nl">withValue</span><span class="p">:</span><span class="n">groupId</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="bp">NSDictionary</span> <span class="o">*</span><span class="n">paramsDict</span> <span class="o">=</span> <span class="l">@{</span>
+</span><span class='line'>                                 <span class="nl">API_PARAMETER_KEY_ACTION</span>           <span class="p">:</span> <span class="n">API_PARAMETER_ACTION_VALUE_ITEMS_REQUEST</span><span class="p">,</span>
+</span><span class='line'>                                 <span class="nl">API_PARAMETER_KEY_GROUP</span>           <span class="p">:</span> <span class="n">groupId</span>
+</span><span class='line'>                                 <span class="l">}</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="p">[[</span><span class="n">SalesCoachAPIClient</span> <span class="n">sharedClient</span><span class="p">]</span> <span class="nl">getPath</span><span class="p">:</span><span class="nb">nil</span>
+</span><span class='line'>                                     <span class="nl">parameters</span><span class="p">:</span><span class="n">paramsDict</span>
+</span><span class='line'>                                        <span class="nl">success</span><span class="p">:</span><span class="o">^</span><span class="p">(</span><span class="n">AFHTTPRequestOperation</span> <span class="o">*</span><span class="n">operation</span><span class="p">,</span> <span class="kt">id</span> <span class="n">responseObject</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>                                      <span class="bp">NSArray</span> <span class="o">*</span><span class="n">lessonClassesArray</span> <span class="o">=</span> <span class="nb">nil</span><span class="p">;</span>
+</span><span class='line'>                                      <span class="k">if</span> <span class="p">([</span><span class="nb">self</span> <span class="nl">checkAPIResponseDictForSuccess</span><span class="p">:</span><span class="n">responseObject</span><span class="p">])</span> <span class="p">{</span>
+</span><span class='line'>                                          <span class="n">itemsArray</span> <span class="o">=</span> <span class="p">[</span><span class="n">Item</span> <span class="nl">itemsArrayFromAPIDict</span><span class="p">:</span><span class="n">responseObject</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>                                          <span class="k">if</span> <span class="p">(</span><span class="n">itemsArray</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>                                              <span class="p">[</span><span class="n">group</span> <span class="nl">setItems</span><span class="p">:[</span><span class="bp">NSSet</span> <span class="nl">setWithArray</span><span class="p">:</span><span class="n">itemsArray</span><span class="p">]];</span>
+</span><span class='line'>                                              <span class="p">[[</span><span class="bp">NSManagedObjectContext</span> <span class="n">defaultContext</span><span class="p">]</span> <span class="n">saveToPersistentStoreAndWait</span><span class="p">];</span>
+</span><span class='line'>                                          <span class="p">}</span>
+</span><span class='line'>                                      <span class="p">}</span>
+</span><span class='line'>                                            <span class="k">if</span> <span class="p">(</span><span class="n">itemsArray</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>                                                <span class="n">itemsReturnBlock</span><span class="p">(</span><span class="nb">YES</span><span class="p">,</span><span class="n">itemsArray</span><span class="p">,</span><span class="nb">nil</span><span class="p">);</span>
+</span><span class='line'>                                            <span class="p">}</span><span class="k">else</span><span class="p">{</span>
+</span><span class='line'>                                                <span class="n">itemsReturnBlock</span><span class="p">(</span><span class="nb">NO</span><span class="p">,</span><span class="nb">nil</span><span class="p">,</span><span class="nb">nil</span><span class="p">);</span>
+</span><span class='line'>                                            <span class="p">}</span>
+</span><span class='line'>                                        <span class="p">}</span> <span class="nl">failure</span><span class="p">:</span><span class="o">^</span><span class="p">(</span><span class="n">AFHTTPRequestOperation</span> <span class="o">*</span><span class="n">operation</span><span class="p">,</span> <span class="bp">NSError</span> <span class="o">*</span><span class="n">error</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>                                            <span class="n">itemsReturnBlock</span><span class="p">(</span><span class="nb">NO</span><span class="p">,</span><span class="nb">nil</span><span class="p">,</span><span class="n">error</span><span class="p">);</span>
+</span><span class='line'>                                        <span class="p">}];</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>This same pattern is used each time I want to make a call into my API, and a new call is set up for each endpoint. The pattern works well, and has proven itself useful. However, it always felt like the APIClient class was doing a little too much work, and had too much knowledge of the internals of parsing the JSON data returned. This proved to be true once I attempted to apply tests to these methods.</p>
+
+<h3>Building the Tests</h3>
+
+<p>The first lesson learned: always test and code at the same time (preferably in that order)! This is about the tenth time I have told myself I was too time constrained to write tests while I was coding. In hindsight, it usually means I&rsquo;ll be doing some heavy refactoring after I start writing tests. The tests always show that the code I wrote quickly is too interdependent, and needs to be broken down more into logical components.</p>
+
+<p>In order to separate concerns and to facilitate mocking data parsing responses, I began to move data parsing code and logic into a separate helper class. This class would be responsible for the following:</p>
+
+<ol>
+<li>Parse the JSON response</li>
+<li>Report success ior failure</li>
+<li>Create and populate data model objects out of the response</li>
+<li>Save the objects to core data</li>
+<li>Return core data object(s) from the call after parsing and saving is complete</li>
+</ol>
+
+
+<p>So with that in mind, the above code changes implementation to look like this:</p>
+
+<figure class='code'><figcaption><span>APIClient.m</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+</pre></td><td class='code'><pre><code class='objective-c'><span class='line'><span class="p">-(</span><span class="kt">void</span><span class="p">)</span><span class="nf">sendItemsRequestForGroupId:</span><span class="p">(</span><span class="bp">NSNumber</span> <span class="o">*</span><span class="p">)</span><span class="nv">groupId</span> <span class="nf">dataManager:</span><span class="p">(</span><span class="n">DataProcessingManager</span> <span class="o">*</span><span class="p">)</span><span class="nv">dataManager</span> <span class="nf">completionBlock:</span><span class="p">(</span><span class="n">ListItemsRequestReturnBlock</span><span class="p">)</span><span class="nv">itemsReturnBlock</span><span class="p">{</span>
+</span><span class='line'>    <span class="n">Group</span> <span class="o">*</span><span class="n">group</span> <span class="o">=</span> <span class="p">[</span><span class="n">Group</span> <span class="nl">findFirstByAttribute</span><span class="p">:</span><span class="n">GroupAttributes</span><span class="p">.</span><span class="n">groupID</span>
+</span><span class='line'>                                        <span class="nl">withValue</span><span class="p">:</span><span class="n">groupId</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="bp">NSDictionary</span> <span class="o">*</span><span class="n">paramsDict</span> <span class="o">=</span> <span class="l">@{</span>
+</span><span class='line'>                                 <span class="nl">API_PARAMETER_KEY_ACTION</span>           <span class="p">:</span> <span class="n">API_PARAMETER_ACTION_VALUE_ITEMS_REQUEST</span><span class="p">,</span>
+</span><span class='line'>                                 <span class="nl">API_PARAMETER_KEY_GROUP</span>           <span class="p">:</span> <span class="n">groupId</span>
+</span><span class='line'>                                 <span class="l">}</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="p">[[</span><span class="n">APIClient</span> <span class="n">sharedClient</span><span class="p">]</span> <span class="nl">getPath</span><span class="p">:</span><span class="nb">nil</span>
+</span><span class='line'>                                     <span class="nl">parameters</span><span class="p">:</span><span class="n">paramsDict</span>
+</span><span class='line'>                                        <span class="nl">success</span><span class="p">:</span><span class="o">^</span><span class="p">(</span><span class="n">AFHTTPRequestOperation</span> <span class="o">*</span><span class="n">operation</span><span class="p">,</span> <span class="kt">id</span> <span class="n">responseObject</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>                                            <span class="bp">NSArray</span> <span class="o">*</span><span class="n">itemsArray</span> <span class="o">=</span> <span class="p">[</span><span class="n">dataManager</span> <span class="nl">itemsArrayForResponseObject</span><span class="p">:</span><span class="n">responseObject</span><span class="p">];</span>
+</span><span class='line'>                                            <span class="k">if</span> <span class="p">(</span><span class="n">itemsArray</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>                                                <span class="n">itemsReturnBlock</span><span class="p">(</span><span class="nb">YES</span><span class="p">,</span><span class="n">lessonClassesArray</span><span class="p">,</span><span class="nb">nil</span><span class="p">);</span>
+</span><span class='line'>                                            <span class="p">}</span><span class="k">else</span><span class="p">{</span>
+</span><span class='line'>                                                <span class="n">itemsReturnBlock</span><span class="p">(</span><span class="nb">NO</span><span class="p">,</span><span class="nb">nil</span><span class="p">,</span><span class="nb">nil</span><span class="p">);</span>
+</span><span class='line'>                                            <span class="p">}</span>
+</span><span class='line'>                                        <span class="p">}</span> <span class="nl">failure</span><span class="p">:</span><span class="o">^</span><span class="p">(</span><span class="n">AFHTTPRequestOperation</span> <span class="o">*</span><span class="n">operation</span><span class="p">,</span> <span class="bp">NSError</span> <span class="o">*</span><span class="n">error</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>                                            <span class="n">itemsReturnBlock</span><span class="p">(</span><span class="nb">NO</span><span class="p">,</span><span class="nb">nil</span><span class="p">,</span><span class="n">error</span><span class="p">);</span>
+</span><span class='line'>                                        <span class="p">}];</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>This allows me to mock the DataProcessingManager object and tell it what to return. Putting this all together, I now have a way of testing asynchronous API calls with test data and validating that my networking calls are doing the right thing in response to different scenarios. After this change, one of my tests against this networking call would look like this:</p>
+
+<figure class='code'><figcaption><span>APIClientTests.m</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+</pre></td><td class='code'><pre><code class='objective-c'><span class='line'><span class="cp">#import &lt;SenTestingKitAsync/SenTestingKitAsync.h&gt;</span>
+</span><span class='line'><span class="cp">#import &lt;OCMock/OCMock.h&gt;</span>
+</span><span class='line'><span class="cp">#import &lt;OHHTTPStubs/OHHTTPStubs.h&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">-(</span><span class="kt">void</span><span class="p">)</span><span class="nf">testGetItemsRequestSuccessAsync</span><span class="p">{</span>
+</span><span class='line'>    <span class="p">[</span><span class="nb">self</span> <span class="nl">setupStubsRequestForResponseName</span><span class="p">:</span><span class="s">@&quot;items_request&quot;</span><span class="p">];</span>
+</span><span class='line'>    <span class="kt">id</span> <span class="n">manager</span> <span class="o">=</span> <span class="p">[</span><span class="n">OCMockObject</span> <span class="nl">mockForClass</span><span class="p">:[</span><span class="n">DataProcessingManager</span> <span class="k">class</span><span class="p">]];</span>
+</span><span class='line'>    <span class="bp">NSArray</span> <span class="o">*</span><span class="n">items</span> <span class="o">=</span> <span class="l">@[</span><span class="mi">@1</span><span class="p">,</span><span class="mi">@2</span><span class="l">]</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">[[[</span><span class="n">manager</span> <span class="n">stub</span><span class="p">]</span> <span class="nl">andReturn</span><span class="p">:</span><span class="n">items</span><span class="p">]</span> <span class="nl">itemsArrayForResponseObject</span><span class="p">:</span><span class="n">OCMOCK_ANY</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="p">[[</span><span class="n">SalesCoachAPIClient</span> <span class="n">sharedClient</span><span class="p">]</span> <span class="nl">sendItemsRequestForGroupId</span><span class="p">:</span><span class="mi">@1</span>
+</span><span class='line'>                                                              <span class="nl">dataManager</span><span class="p">:</span><span class="s">@&quot;ski081&quot;</span>
+</span><span class='line'>                                                       <span class="nl">completionBlock</span><span class="p">:</span><span class="o">^</span><span class="p">(</span><span class="kt">BOOL</span> <span class="n">success</span><span class="p">,</span> <span class="bp">NSArray</span> <span class="o">*</span><span class="n">itemsArray</span><span class="p">,</span> <span class="bp">NSError</span> <span class="o">*</span><span class="n">error</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>                                                           <span class="n">STAssertTrue</span><span class="p">(</span><span class="n">success</span><span class="p">,</span> <span class="nb">nil</span><span class="p">);</span>
+</span><span class='line'>                                                           <span class="n">STAssertNil</span><span class="p">(</span><span class="n">error</span><span class="p">,</span> <span class="nb">nil</span><span class="p">);</span>
+</span><span class='line'>                                                           <span class="n">STAssertNotNil</span><span class="p">(</span><span class="n">itemsArray</span><span class="p">,</span> <span class="nb">nil</span><span class="p">);</span>
+</span><span class='line'>                                                           <span class="n">STAssertTrue</span><span class="p">(</span><span class="n">itemsArray</span><span class="p">.</span><span class="n">count</span> <span class="o">==</span> <span class="mi">2</span><span class="p">,</span> <span class="nb">nil</span><span class="p">);</span>
+</span><span class='line'>                                                           <span class="n">STSuccess</span><span class="p">();</span>
+</span><span class='line'>                                                       <span class="p">}];</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>I am making use of the following helper methods in my test class:</p>
+
+<figure class='code'><figcaption><span>APIClientTests.m</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+</pre></td><td class='code'><pre><code class='objective-c'><span class='line'><span class="cp">#pragma mark - Helper</span>
+</span><span class='line'><span class="p">-(</span><span class="n">OHHTTPStubsResponse</span> <span class="o">*</span><span class="p">)</span><span class="nf">stubResponseForResponseNamed:</span><span class="p">(</span><span class="bp">NSString</span> <span class="o">*</span><span class="p">)</span><span class="nv">responseName</span> <span class="nf">responseTime:</span><span class="p">(</span><span class="n">CGFloat</span><span class="p">)</span><span class="nv">responseTime</span><span class="p">{</span>
+</span><span class='line'>    <span class="k">return</span> <span class="p">[</span><span class="n">OHHTTPStubsResponse</span> <span class="nl">responseNamed</span><span class="p">:</span><span class="n">responseName</span>
+</span><span class='line'>                                   <span class="nl">fromBundle</span><span class="p">:</span><span class="nb">self</span><span class="p">.</span><span class="n">bundle</span>
+</span><span class='line'>                                 <span class="nl">responseTime</span><span class="p">:</span><span class="n">responseTime</span><span class="p">];</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">-(</span><span class="kt">void</span><span class="p">)</span><span class="nf">setupStubsRequestForResponseName:</span><span class="p">(</span><span class="bp">NSString</span> <span class="o">*</span><span class="p">)</span><span class="nv">responseName</span><span class="p">{</span>
+</span><span class='line'>    <span class="n">OHHTTPStubsResponse</span> <span class="o">*</span><span class="n">response</span> <span class="o">=</span> <span class="p">[</span><span class="nb">self</span> <span class="nl">stubResponseForResponseNamed</span><span class="p">:</span><span class="n">responseName</span>
+</span><span class='line'>                                                          <span class="nl">responseTime</span><span class="p">:</span><span class="mf">0.1f</span><span class="p">];</span>
+</span><span class='line'>    <span class="p">[</span><span class="n">OHHTTPStubs</span> <span class="nl">stubRequestsPassingTest</span><span class="p">:</span><span class="o">^</span><span class="kt">BOOL</span><span class="p">(</span><span class="bp">NSURLRequest</span> <span class="o">*</span><span class="n">request</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="nb">YES</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">}</span> <span class="nl">withStubResponse</span><span class="p">:</span><span class="o">^</span><span class="n">OHHTTPStubsResponse</span> <span class="o">*</span><span class="p">(</span><span class="bp">NSURLRequest</span> <span class="o">*</span><span class="n">request</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">response</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">}];</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>Final note</h3>
+
+<p>To enable testing asynchronous calls, I relied heavilt on the excellent <a href="http://www.objc.io/issue-2/editorial.html">2nd issue</a> of <a href="http://www.objc.io">objc.io </a>. From that article, I was introduced to the <a href="https://github.com/AliSoftware/OHHTTPStubs">OHHTTPStubs</a>  and <a href="https://github.com/nxtbgthng/SenTestingKitAsync">SenTestingKitAsync</a> library.</p>
+
+<p>Some other libraries I am making use of here:
+- <a href="https://github.com/magicalpanda/MagicalRecord">MagicalRecord</a>
+- <a href="https://github.com/erikdoe/ocmock">OCMock</a></p>
+
+<p>This is a work in progress, but has been the best thing I&rsquo;ve been able to come up with so far. It definitely relieves some pain for me.</p>
+
+<p>Best of luck testing, and drop me a comment here with any additional tips/suggestions!</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[A Change in Direction]]></title>
+    <link href="http://markstruzinski.com/blog/2013/05/14/a-change-in-direction/"/>
+    <updated>2013-05-14T11:18:00-04:00</updated>
+    <id>http://markstruzinski.com/blog/2013/05/14/a-change-in-direction</id>
+    <content type="html"><![CDATA[<p>In hitting brick walls, taking road trips for work, and feeling guilty about about posting in weeks, I have reconsidered the return on investment when fully implementing logic tests. I have dealt with compiler flag issues, missing imports, manually adding .m files for compilation, and a host of other issues. After having my own doubts, and reading <a href="http://iosunittesting.com/ocunit-logic-tests-are-dead/?utm_source=rss&amp;utm_medium=rss&amp;utm_campaign=ocunit-logic-tests-are-dead" title="this post">this post</a> (the entire thing had me nodding my head), I&rsquo;ve decided to reconsider my take on application vs unit tests. Going forward, I&rsquo;m going to rework this series from the start using application tests.</p>
+
+<p>They seem to be much quicker to run now. They are definitely a win in the setup/configuration department. Logic tests are much more difficult to implement.</p>
+
+<p>Stay tuned for more.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Setting up iOS Logic Tests [part 4]]]></title>
+    <link href="http://markstruzinski.com/blog/2013/04/08/setting-up-ios-logic-tests-part-4/"/>
+    <updated>2013-04-08T16:05:00-04:00</updated>
+    <id>http://markstruzinski.com/blog/2013/04/08/setting-up-ios-logic-tests-part-4</id>
+    <content type="html"><![CDATA[<p>This is part 4 in a <a href="http://markstruzinski.com/blog/2013/02/01/unit-testing-series/">multi-part series</a> on iOS unit testing and integration testing. In the <a href="http://markstruzinski.com/blog/2013/02/19/setting-up-ios-logic-tests-part-3/">last post</a>, we discussed setting up Core Data and the Magical Record library. This week, we’re going to set up our logic testing bundle. Let’s get started.</p>
+
+<!-- more -->
+
+
+<p>**Quick note: I recreated the sample project that goes along with this series. I made some unfortunate naming mistakes early on that made it unclear which bundles we were refernecing and working with. Going forward, the actual app bundle is named “SampleApp”, and other testing bundles will be named appropriately. I’m taking down the old GitHub repo and adding one here named SampleApp</p>
+
+<p>I went through and cleaned up the project a little bit. I moved some files into subfolders to get it a little more organized, and chanfed the name of the app target to <code>SamleApp</code> to make things a little clearer. The project is up on <a href="https://github.com/ski081/LogicTests">GitHub</a> and you can simply do a pull to get the changes.</p>
+
+<h2>Adding a Logic Test Bundle</h2>
+
+<p>First, we need to add the logic test bundle. Open the project navigator, and select the project node at the very top. In the center window, click the <strong>Add Target</strong> button at the bottom of the screen. Under the iOS section in the left menu, select <strong>Other</strong>. In the center pane, select <strong>Cocoa Unit Testing Bundle</strong>:</p>
+
+<p><img src="http://markstruzinski.com/images/post_images/logictests-select-bundle.png"></p>
+
+<p>Name it <strong>“Logic Tests”</strong>, leave everything else as-is, and click Finish. You should now be able to run the default unit tests included with the bundle and get a failing result. This will verify that your tests are set up. To verify:</p>
+
+<ol>
+<li>Switch your target in the top drop down from <strong>“SampleApp”</strong> to <strong>“LogicTests”</strong></li>
+<li>Go to the menu bat, select <strong>Product=>Test</strong></li>
+<li>You should see a new issue in the the Issue Navigator that reads “<em>Unit tests are not implemented yet in LogicTests</em>”</li>
+<li>If not, review the setup steps and try to figure out of you missed something</li>
+</ol>
+
+
+<p>Next, we should make it easier to run these tests. As it is, every time you want to run your logic tests, you would have to switch targets from your SampleApp target to the LogicTests target, then run the tests. This is harldy easy or efficient. We can make this simpler by hooking up the Test action of our main app scheme to the LogicTests bundle. This will enable is to run the logic tests directly from the main app bundle. Here’s how to do that:</p>
+
+<ol>
+<li>Select the SampleApp target</li>
+<li>Click the drop down, and select <strong>“Edit Scheme”</strong></li>
+<li>Select the Test action in the left sidebar</li>
+<li>Click the ‘<strong>+</strong>’ button to add an action</li>
+<li>You should see your LogicTests bundle under the SampleApp project. Select it, and click <strong>Add</strong>
+ <img src="http://markstruzinski.com/images/post_images/logictests-add-bundle-action.png"></li>
+<li>Click Ok</li>
+</ol>
+
+
+<p>Finally, instead of using the menu item to run unit tests, a much easier way to trigger them is via a keyboard shortcut. In Xcode, the default keyboard shortcut to run unit tests against the current target is to simply hit <strong>⌘ + U</strong>. Try this while you have SampleApp selected. It should run the LogicTests bundle and take you to the same error in the issue navigator as before.</p>
+
+<p>That’s it for this installment. Next up, we’ll start making use of our logic tests and look at the differences between logic tests and application tests in Xcode.</p>
+
+<p>As always, please contact me with any questions.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Orientation Changes in iOS 6]]></title>
+    <link href="http://markstruzinski.com/blog/2013/03/11/orientation-changes-in-ios-6/"/>
+    <updated>2013-03-11T11:05:00-04:00</updated>
+    <id>http://markstruzinski.com/blog/2013/03/11/orientation-changes-in-ios-6</id>
+    <content type="html"><![CDATA[<p>In a current project, I had the need to have one specific view controller present its view in landscape orientation only. Pre-iOS 6, I would have overridden the <code>shouldAutoRotateToInterfaceOrientation</code> method and returned <code>UIInterfaceOrientationLandscape</code>. In iOS 6, this method is deprecated. I began researching how orientation issues should be handled going forward, and here is the way I made my specific scenario work.</p>
+
+<!-- more -->
+
+
+<p>In iOS 6, the system queries the <strong>topmost</strong> visible view controller to see if it should rotate. The viewcontroller can override 2 methods to answer this query correctly:</p>
+
+<ul>
+<li><code>supportedInterfaceOrientations:</code></li>
+<li><code>shouldAutoRotate</code></li>
+</ul>
+
+
+<p>It would seem simple enough to override these methods on each view controller that had special requirements for presentation to have them determine their orientation. The problem arose for me when I had a navigation controller thrown into the mix. Since technically the topmost view controller in a navigation stack is the navigation controller itself, iOS was ignoring the method overrides I had in place for the individual view controllers. It was sending the message directly to my UINavigationController, which did not provide the settings I needed.</p>
+
+<p>I solved this issue by subclassing UINavigationController and overriding the previously mentioned methods, then passing the results from the navigation controller down into the top view controller via the <code>topViewController</code> property. Here are the steps to accomplish this:</p>
+
+<ol>
+<li>Create a subclass of <code>UINavigationController</code></li>
+<li>Override the following methods:
+
+<ol>
+<li><code>-(UIInterfaceOrientation)preferredInterfaceOrientationForPresentation</code></li>
+<li><code>-(NSUInteger)supportedInterfaceOrientations</code></li>
+<li><code>-(BOOL)shouldAutorotate</code></li>
+</ol>
+</li>
+<li>Return the result of each of these operations by passing in the value from the result of calling that method on the topViewControllerof the UINavigationController</li>
+<li>Implement any or all of those methods specific to your needs on your UIViewController subclasses</li>
+<li>Make sure you are using your <code>UINavigationController</code> subclass in place of the standard <code>UINavigationController</code>
+
+<ol>
+<li>My project uses storyboards, so I simply specified my UINavigationController subclass in the Identity Inspector</li>
+</ol>
+</li>
+</ol>
+
+
+<p>Here is my implementation of the navigation controller subclass in its entirety:</p>
+
+<figure class='code'><figcaption><span>UINavigationController Subclass</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+</pre></td><td class='code'><pre><code class='objective-c'><span class='line'>  <span class="k">@implementation</span> <span class="nc">FMNavigationController</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="o">-</span><span class="p">(</span><span class="kt">BOOL</span><span class="p">)</span><span class="n">shouldAutorotate</span><span class="p">{</span>
+</span><span class='line'>      <span class="k">return</span> <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">topViewController</span> <span class="n">shouldAutorotate</span><span class="p">];</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="o">-</span><span class="p">(</span><span class="bp">NSUInteger</span><span class="p">)</span><span class="n">supportedInterfaceOrientations</span><span class="p">{</span>
+</span><span class='line'>      <span class="k">return</span> <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">topViewController</span> <span class="n">supportedInterfaceOrientations</span><span class="p">];</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="o">-</span><span class="p">(</span><span class="n">UIInterfaceOrientation</span><span class="p">)</span><span class="n">preferredInterfaceOrientationForPresentation</span><span class="p">{</span>
+</span><span class='line'>      <span class="k">return</span> <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">topViewController</span> <span class="n">preferredInterfaceOrientationForPresentation</span><span class="p">];</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">@end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Then, in my specific view controller that needs to be launched in landscape, I overrode this method and returned the appropriate value:</p>
+
+<figure class='code'><figcaption><span>View Controller Method Overrides</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='objective-c'><span class='line'>  <span class="cp">#pragma mark - Rotation</span>
+</span><span class='line'>  <span class="o">-</span><span class="p">(</span><span class="bp">NSUInteger</span><span class="p">)</span><span class="n">supportedInterfaceOrientations</span><span class="p">{</span>
+</span><span class='line'>      <span class="k">return</span> <span class="n">UIInterfaceOrientationMaskLandscape</span><span class="p">;</span>
+</span><span class='line'>  <span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>That’s really all there was to it. The research to get this right took much longer than the implementation.</p>
+
+<p>Please contact me with any questions, and good luck.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Quick Tip: TextExpander/Octopress New Code Block]]></title>
+    <link href="http://markstruzinski.com/blog/2013/02/25/quick-tip-textexpander-slash-octopress-new-code-block/"/>
+    <updated>2013-02-25T13:21:00-05:00</updated>
+    <id>http://markstruzinski.com/blog/2013/02/25/quick-tip-textexpander-slash-octopress-new-code-block</id>
+    <content type="html"><![CDATA[<p>Just a quick tip. This blog is built using <a href="http://octopress.org/" title="Octopress - a blogging framework for hackers">Octopress</a>. Octopress uses <a href="https://github.com/mojombo/jekyll" title="Jekyll static blog generator">Jekkyl</a> to create a static HTML site using markdown files for the content. I’ve been slowly building up some markdown specific <a href="http://www.smilesoftware.com/TextExpander/index.html" title="TextExpander home page">TextExpander</a> snippets and <a href="http://www.keyboardmaestro.com/" title="Keyboard Maestro">Keyboard Maestro</a> macros to make things easier.</p>
+
+<!-- more -->
+
+
+<p>I got some great Keyboard Maestro tips from Patrick Welker in <a href="http://rocketink.net/2013/01/markdown-maestro-guide.html" title="Ultimate Markdown Maestro Guide — RocketINK">this RocketInk article</a>. I’ve also been creating small TextExpander snippets make it easier to put in blocks of code and other commonly used elements.</p>
+
+<p>Here is one I recently created that I use a lot. When I type <strong>__ocb</strong>, TextExpander creates a code block and places the cursor in the center and ready to accept input. It also asks for the language in a drop down menu (I’ve only included language selections as needed), and a title for the code block. This adds the correct text in the initial line of the code block that will add syntax coloring and a title to the top of the code block.</p>
+
+<p>So, this (minus the underscores):</p>
+
+<p>__&#8220;` objective-c Test Code Block</p>
+
+<p>NSLog(@“Testing”);</p>
+
+<p>__&#8220;`</p>
+
+<p>turns into this:</p>
+
+<figure class='code'><figcaption><span>Test code block</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objective-c'><span class='line'><span class="n">NSLog</span><span class="p">(@</span><span class="err">“</span><span class="n">Testing</span><span class="err">”</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><a href="http://cl.ly/180X3l3e0y32" title="CloudApp link">Here is a link</a> to the snippet.</p>
+
+<p>Let me know if you have any feedback/questions.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Setting Up iOS Logic Tests [Part 3]]]></title>
+    <link href="http://markstruzinski.com/blog/2013/02/19/setting-up-ios-logic-tests-part-3/"/>
+    <updated>2013-02-19T13:24:00-05:00</updated>
+    <id>http://markstruzinski.com/blog/2013/02/19/setting-up-ios-logic-tests-part-3</id>
+    <content type="html"><![CDATA[<p>This is part 3 in a <a href="http://markstruzinski.com/blog/2013/02/01/unit-testing-series/">multi-part series</a> on iOS unit testing and integration testing. In the <a href="http://markstruzinski.com/blog/2013/02/13/setting-up-ios-logic-tests-part-2/">last post</a>, we discussed setting up <a href="https://github.com/samvermette/SVProgressHUD">SVProgressHUD</a>.</p>
+
+<h2>Magical Record</h2>
+
+<p><a href="http://magicalrecord.com/">Magical Record</a> is an excellent library that compliments the Core Data framework. I’m going to assume some knowledge of Core Data here. If you need a reference, the <a href="http://www.amazon.com/gp/product/1937785084/ref=as_li_qf_sp_asin_tl?ie=UTF8&amp;camp=1789&amp;creative=9325&amp;creativeASIN=1937785084&amp;linkCode=as2&amp;tag=markstruz0a-20">Core Data</a> book by Marcus Zarra is excellent, and just hit its 2nd edition. We are going to build out a very simple data model, with just one entity. This will allow us to set up the core data stack and verify that Magical Record is working.</p>
+
+<!-- more -->
+
+
+<p>Let’s get core data set up:</p>
+
+<ul>
+<li><strong>Add the Core Data framework in the Link Binary with Libraries step</strong>
+
+<ol>
+<li> Click the project node in the project navigator sidebar on the left</li>
+<li> Select the app target</li>
+<li> Select the Build Phases tab</li>
+<li> Open the Link Binary with Libraries list</li>
+<li> Click the <strong>‘+’</strong> button</li>
+<li> Search for <strong>‘Core Data’</strong></li>
+<li> Select <code>CoreData.framework</code></li>
+<li> Click the <strong>Add</strong> button</li>
+</ol>
+</li>
+</ul>
+
+
+<p><img src="http://markstruzinski.com/images/post_images/logictests-coredata-framework.png"></p>
+
+<ul>
+<li><p><strong>Add an import for Core Data to the precompiled header file to make Core Data available for the entire project</strong></p>
+
+<ol>
+<li> Open the precompiled header file - This file is usually placed in the <strong>Supporting Files</strong> group, and is named [project-name]-Prefix.pch</li>
+<li> Inside the <code>#ifdef __OBJC__</code> block, add <code>#import &lt;CoreData/CoreData.h&gt;</code>. This will make core data available throughout the project without having to import the framework everywhere it needs to be used.</li>
+</ol>
+</li>
+<li><p><strong>Add a data model to your app</strong></p>
+
+<ol>
+<li> Right click on the group in the project navigator that represents your app. For me, this is <strong>LogicTests</strong></li>
+<li> Select <strong>New File</strong></li>
+<li> Select Core Data => Data Model</li>
+<li> Select Create</li>
+<li> Your new data model should open in the graphical editor. By default, it will be named <strong>Model</strong></li>
+</ol>
+</li>
+<li><p><strong>Create a Person entity</strong></p>
+
+<ol>
+<li> On the bottom toolbar, click the <strong>Add Entity</strong> button</li>
+<li> A new entity will be created and the name will be editable immediately in the left sidebar. Type <strong>Person</strong> and hit Return</li>
+<li> We now have a new entity. We need to create attributes for it.</li>
+<li> Under the <strong>Attributes</strong> section, click the ‘+’ symbol. Name the new attribute <code>firstName</code> and make it a <code>String</code> type</li>
+<li> Repeat this process, and create a <code>lastName</code> property, also of type <code>String</code></li>
+<li> When you finish, your entity should look like this:</li>
+</ol>
+
+
+<p>  <img src="http://markstruzinski.com/images/post_images/logictests-person-entity.png"></p></li>
+<li><p><strong>Create an NSManagedObject subclass</strong><sup id='fnref:1'><a href='#fn:1' rel='footnote'>1</a></sup></p>
+
+<ol>
+<li> With your newly created <strong>Person</strong> entity selected, go to the menu bar, and select Editor => Create NSManagedObject Subclass</li>
+<li> Leave everything as-is, and click Create</li>
+<li> You should now have a <code>Person.h</code> and <code>Person.m</code> file in your project navigator. Inspecting these files will just show some standard property declarations in the header, and <code>@dynamic</code> declarations in the implementation.  Without diving too deep here, the <code>@dynamic</code> declarations simply tell the compiler that the implementation is there for <code>NSManagedObject</code> subclasses and prevent compiler warnings.</li>
+<li> Let’s take a sanity break here and hit <strong>⌘B</strong> to make sure the app builds.</li>
+</ol>
+</li>
+<li><p><strong>Use Magical Record to set up the Core Data stack</strong></p></li>
+</ul>
+
+
+<p>Magical Record is an excellent helper library that makes interacting with Core Data much easier. It adds syntax that allows you to perform common operations in 1 line of code instead of 3 or 4. Let’s add Magical Record into the mix and use it to bootstrap our Core Data stack.</p>
+
+<ol>
+<li>Add an import to your .pch file so that Magical Record is available project wide. My .pch file now looks like this:</li>
+</ol>
+
+
+<figure class='code'><figcaption><span>LogicTests-Prefix.pch</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='objective-c'><span class='line'>  <span class="cp">#import &lt;Availability.h&gt;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="cp">#define MR_SHORTHAND</span>
+</span><span class='line'>  <span class="cp">#ifdef __OBJC__</span>
+</span><span class='line'>      <span class="cp">#import &lt;UIKit/UIKit.h&gt;</span>
+</span><span class='line'>      <span class="cp">#import &lt;Foundation/Foundation.h&gt;</span>
+</span><span class='line'>      <span class="cp">#import &lt;CoreData/CoreData.h&gt;</span>
+</span><span class='line'>      <span class="cp">#import &quot;CoreData+MagicalRecord.h&quot;</span>
+</span><span class='line'>  <span class="cp">#endif</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>The <code>#define</code> statement allows you to use Magical Record calls without a prefix. Without this define, you would have to prefix all of your Magical Record calls with <code>MR_</code></li>
+<li><p>The <code>#import "CoreData+MagicalRecord.h"</code> statement adds categories to several Core Data classes, which allow you to use the Magical Record extensions</p></li>
+<li><p>In your app delegate, add the following statement to set up the core data stack:
+ <code>[MagicalRecord setupCoreDataStack];</code></p></li>
+<li>Build to make sure everything is wired up correctly and you get no compiler errors.</li>
+</ul>
+
+
+<p>Ok, now we’re all set up. Next, we need to create the unit test bundle and begin to meet the challenges of creating unit tests against our code.</p>
+
+<p>I’ve put my progress so far <a href="https://github.com/ski081/LogicTests">up on GitHub for reference</a>. Please feel free to check it out!</p>
+
+<div class="footnotes">
+    <ol>
+        <li id='fn:1'><p> I always create <code>NSManagedObject</code> subclasses. I prefer to use <a href="https://github.com/rentzsch/mogenerator">Mogenerator</a>. Mogenerator is a much more elegant and destruction-proof way of doing this, but for the sake of brevity, we’ll just use the built-in class generation from the Core Data modeler.
+<a href='#fnref:1' rev='footnote'>↩</a></p>
+</li>
+    </ol>
+</div>
+
+
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Setting Up iOS Logic Tests [Part 2]]]></title>
+    <link href="http://markstruzinski.com/blog/2013/02/13/setting-up-ios-logic-tests-part-2/"/>
+    <updated>2013-02-13T15:02:00-05:00</updated>
+    <id>http://markstruzinski.com/blog/2013/02/13/setting-up-ios-logic-tests-part-2</id>
+    <content type="html"><![CDATA[<p>This is part 2 in a <a href="http://markstruzinski.com/blog/2013/02/01/unit-testing-series/">multi-part series</a> on iOS unit testing and integration testing. In the <a href="http://markstruzinski.com/blog/2013/02/08/setting-up-ios-logic-tests/">last post</a>, we discussed setting up the project and adding some dependencies with CocoaPods.</p>
+
+<p>Today, I’m going to go through setting up some initial code to use the 3rd party libraries to make sure that the libraries are working. Then we’ll set up logic tests and see what breaks with CocoaPods (spoiler: compiler errors ahead!).</p>
+
+<!-- more -->
+
+
+<h2>SVProgressHUD</h2>
+
+<p>First, let’s hook up <a href="https://github.com/samvermette/SVProgressHUD">SVProgressHUD</a></p>
+
+<ol>
+<li>Open <code>ViewController.m</code> and import SVProgressHUD: <code>#import "SVProgressHUD.h”</code></li>
+<li>In <code>viewDidLoad</code>, create an SVProgressHUD indicator, then dismiss it after 2 seconds:</li>
+</ol>
+
+
+<figure class='code'><figcaption><span>ViewController.m</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class='objective-c'><span class='line'>  <span class="o">-</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="n">viewDidLoad</span><span class="p">{</span>
+</span><span class='line'>      <span class="p">[</span><span class="nb">super</span> <span class="n">viewDidLoad</span><span class="p">];</span>
+</span><span class='line'>      <span class="p">[</span><span class="n">SVProgressHUD</span> <span class="nl">showWithStatus</span><span class="p">:</span><span class="s">@&quot;Running...&quot;</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="kt">double</span> <span class="n">delayInSeconds</span> <span class="o">=</span> <span class="mf">2.0</span><span class="p">;</span>
+</span><span class='line'>      <span class="kt">dispatch_time_t</span> <span class="n">popTime</span> <span class="o">=</span> <span class="n">dispatch_time</span><span class="p">(</span><span class="n">DISPATCH_TIME_NOW</span><span class="p">,</span> <span class="p">(</span><span class="kt">int64_t</span><span class="p">)</span>    <span class="p">(</span><span class="n">delayInSeconds</span> <span class="o">*</span> <span class="n">NSEC_PER_SEC</span><span class="p">));</span>
+</span><span class='line'>      <span class="n">dispatch_after</span><span class="p">(</span><span class="n">popTime</span><span class="p">,</span> <span class="n">dispatch_get_main_queue</span><span class="p">(),</span> <span class="o">^</span><span class="p">(</span><span class="kt">void</span><span class="p">){</span>
+</span><span class='line'>          <span class="p">[</span><span class="n">SVProgressHUD</span> <span class="n">dismiss</span><span class="p">];</span>
+</span><span class='line'>      <span class="p">});</span>
+</span><span class='line'>    <span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>You should be able to run this code now and see a progress indicator with a spinner and the text “Running&hellip;.”. It should disappear after 2 seconds.</p>
+
+<p><img src="http://markstruzinski.com/images/post_images/logictests-svprogresshud-spinner.png"></p>
+
+<p>Great! This proves one of our CocoaPods libraries is communicating with the app’s main project and is working properly.</p>
+
+<p>Next we’ll move onto Core Data with Magical Record.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Setting up iOS Logic Tests [Part 1]]]></title>
+    <link href="http://markstruzinski.com/blog/2013/02/08/setting-up-ios-logic-tests/"/>
+    <updated>2013-02-08T11:47:00-05:00</updated>
+    <id>http://markstruzinski.com/blog/2013/02/08/setting-up-ios-logic-tests</id>
+    <content type="html"><![CDATA[<p>I&rsquo;m continuing on my task to get a full project using iOS unit tests and integration tests. My first step is to set up logic tests in Xcode. I recently watched an excellent <a href="http://www.lynda.com/iOS-tutorials/Unit-Testing-iOS-Applications-Xcode/91949-2.html?srchtrk=index%3a0%0alinktypeid%3a2%0aq%3aios+unit%0apage%3a1%0as%3arelevance%0asa%3atrue%0aproducttypeid%3a2">unit testing course</a> on <a href="http://www.lynda.com">Lynda</a>. In that course, Ron Lisle goes over the advantages of using logic tests. The most compelling factor in using logic tests over application tests is speed.</p>
+
+<!-- more -->
+
+
+<p>Application tests actually bootstrap the entire app in order to run. This takes a considerable amount of time and can be a bottleneck. You want your unit tests to run fast. Logic tests will build the main application bundle, but then run in isolation and tests methods on any class you are interested in. I decided to write as many logic tests as possible, and only switch to application tests when logic tests could not get the job done. I am anticipating that I will need to use application tests once I start testing view controllers, but I won’t know until I get there.</p>
+
+<h2>Setting up the project</h2>
+
+<p>I am starting from a blank slate, but I have one caveat: I want to use <a href="http://cocoapods.org/" title="CocoaPods: The Objective-C Library Manager">CocoaPods</a> for all of my external library maintenance. If you haven’t heard of CocoaPods, you should read up on it. CocoaPods is a way to manage your 3rd party dependencies more easily. It supports updating libraries in place and removes a lot of pain with integrating 3rd party code. As you will see, however, using CocoaPods with logic tests makes things a little more complex during setup.</p>
+
+<p>To begin, start a new project without any unit tests included.</p>
+
+<p><img src="http://markstruzinski.com/images/post_images/logictests-project-setup.png"></p>
+
+<p>Next, make sure you have the cocoa pods gem set up . There are directions <a href="http://cocoapods.org/" title="CocoaPods: The Objective-C Library Manager">CocoaPods Setup</a> if you’ve never done this before. After that, let’s bring in 2 3rd party libraries by creating a podspec file and telling CocoaPods to set everything up for us.</p>
+
+<h2>Set up a Podspec file</h2>
+
+<ol>
+<li>Close Xcode if it’s still open</li>
+<li>Create a file in the base folder of your project named <code>Podfile</code> with no extension</li>
+<li>Add a line telling CocoaPods the platform and version of iOS you are using.
+
+<ol>
+<li><code>platform :ios, '6.0'</code></li>
+</ol>
+</li>
+<li>Add lines for 2 pods (these are really dependencies on 3rd party code)
+
+<ol>
+<li><code>pod ‘SVProgressHUD’</code></li>
+<li><code>pod ‘MagicalRecord’</code></li>
+</ol>
+</li>
+<li>Save your file and close it</li>
+<li>Open terminal, navigate to the base folder of your project, and enter the following line
+
+<ol>
+<li><code>pod install</code></li>
+</ol>
+</li>
+<li>You should see some status lines go by, then a line instructing you to use a workspace now instead of the project file. This is because CocoaPods creates a second project named <code>Pods</code> and adds it and your original project to a workspace named after your project. In my case, it created a <code>LogicTests.xcworkspace file</code>. If I open that file now, I can see that I have a <code>Pods</code> project and a <code>LogicTests</code> project inside of the workspace.</li>
+</ol>
+
+
+<p><img src="http://markstruzinski.com/images/post_images/logictests-cocoapods-project.png"></p>
+
+<p>We&rsquo;re going to break here for now. Next, we&rsquo;ll start making use of the 3rd party libraries we included via CocoaPods. After that, we&rsquo;ll finally set up the logic tests and get them running.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Unit Testing Series]]></title>
+    <link href="http://markstruzinski.com/blog/2013/02/01/unit-testing-series/"/>
+    <updated>2013-02-01T16:31:00-05:00</updated>
+    <id>http://markstruzinski.com/blog/2013/02/01/unit-testing-series</id>
+    <content type="html"><![CDATA[<p>I have wanted to get better at unit testing and the tooling around it for some time. I usually start out determined to get a good amount of the code covered by unit tests, and to possibly get some UI tests built around user interactions. Unfortunately, deadlines intervene, and the tests get abandoned. With my most recent project, I decided to put all of these practices in place.</p>
+
+<!-- more -->
+
+
+<p>This is going to require learning as I go, and I intend to document my progress here for my own learning and hopefully to help anyone else who is researching the same thing.</p>
+
+<p>I intend to use the following technologies:</p>
+
+<ul>
+<li>Unit testing using standard the OCUnit/SenTest frameworks included with Xcode
+
+<ul>
+<li>I’ve flirted with other projects in the past, including <a href="https://github.com/allending/Kiwi">Kiwi</a> . I really like the syntax and organization that Kiwi provides, but I want to stick with the out of the box stuff for now</li>
+</ul>
+</li>
+<li>Integration/UI testing with <a href="http://testingwithfrank.com/">Frank</a>. I’ve got a fair amount of experience with Frank. I’ve also played with <a href="https://github.com/square/KIF">KIF</a>, and much prefer the separation and tooling that Frank provides</li>
+<li>Continuous Integration using <a href="http://jenkins-ci.org/">Jenkins</a></li>
+<li>Build versioning using a build script for automated version increments for release builds</li>
+</ul>
+
+
+<p>I’m going to try to document my thought process and all the steps I take along the way. Hopefully, I can get some constructive feedback on any improvements I can make.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Keyboard Maestro macro to open in browser from ReadKit]]></title>
+    <link href="http://markstruzinski.com/blog/2013/01/16/keyboard-maestro-macro-to-open-in-browser-from-readkit/"/>
+    <updated>2013-01-16T12:48:00-05:00</updated>
+    <id>http://markstruzinski.com/blog/2013/01/16/keyboard-maestro-macro-to-open-in-browser-from-readkit</id>
+    <content type="html"><![CDATA[<p>I recently switched to <a href="http://www2.ed.gov/pubs/CompactforReading/index.html">ReadKit</a> for reading <a href="https://www.instapaper.com/">Instapaper</a> articles on my mac. I switched over from Read Later (no longer available). Read Later was my app of choice for a long time, but it is no longer in active development. The team was hired by <a href="http://www.pocketmac.com/">Pocket</a>, and they are working solely on the mac app now. Read Later was good, but some much needed updates were never implemented. The display for articles was frequently skewed, and the app had started to crash a lot.</p>
+
+<!-- more -->
+
+
+<p>ReadKit’s display of articles is much smoother, and the overall look and feel is fresh and crisp. One thing I do miss from Read Later is the keyboard shortcuts. I frequently need to open articles in a browser quickly. Whenever I am viewing an article that has code examples in it, the formatting is always chancy at best. Sometimes the code displays great. Other times it is truncated or not present at all. The only way I can be sure I am seeing the full article is to open it in a browser.</p>
+
+<p>In Read Later, I was simply able to hit the Return <strong>(↩)</strong> key and the selected article would open in my default browser. This shortcut is not present in ReadKit. You can either hit <strong>V</strong> to view the original article within ReadKit, or hit <strong>B</strong> to view the article in its current form in your default browser. The problem here is that if you are currently viewing the Instapaper version of the article, it opens on Instapaper’s website in its stripped down format rather than opening to the native URL. So I would have to hit <strong>V</strong> then <strong>B</strong> on every article that I wanted to view in Safari.</p>
+
+<p>I know this is a small problem and just one extra keystroke, but it was annoying me. So, I created a new Keyboard Maestro group that is only active from within ReadKit. From there, whenever I hit <strong>⌘ + ↩</strong>, it opens the article right in the default browser.</p>
+
+<p>Irritation solved! Below is a screenshot of the macro in case you are interested. It is very simple, but it fixed my issue.</p>
+
+<p><img src="http://markstruzinski.com/images/post_images/2013/01/readkit_km_open_in_browser.png" alt="KM Macro" /></p>
+
+<p><img class="fancybox" src="http://markstruzinski.com/images/post_images/2013/01/readkit_km_open_in_browser.png"></p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Homescreen January 2013]]></title>
+    <link href="http://markstruzinski.com/blog/2013/01/03/homescreen-january-2013/"/>
+    <updated>2013-01-03T12:58:00-05:00</updated>
+    <id>http://markstruzinski.com/blog/2013/01/03/homescreen-january-2013</id>
+    <content type="html"><![CDATA[<p>I’m going to try to do a post once per month detailing my current iPhone homescreen. If it works out well, I might also do one a month for the iPad as well. Below is a screenshot of my current homescreen.</p>
+
+<!-- more -->
+
+
+<p><img src="http://markstruzinski.com/images/post_images/homescreen-2013-01.png"></p>
+
+<h2>Some of my favorites</h2>
+
+<p><strong>Apple folder</strong></p>
+
+<p>Not a whole lot to note in here. This is just a quick collection of the stock Apple apps. Mostly, it’s a place to quickly get to SMS, settings, the App Store, and Mobile Safari.</p>
+
+<p><a href="https://itunes.apple.com/us/app/camera-awesome/id420744028?mt=8&amp;partnerId=30&amp;siteID=QZ1CsQ8cm0M"><strong>Camera Awesome</strong></a></p>
+
+<p>I’m using this one in place of the stock Apple camera app. It’s fast and has a nice set of features, including big button (turns the entire screen into the shutter button) and burst mode. I used Camera+ for a long time, but lately it has become very slow to load and crashes a lot.</p>
+
+<p><a href="https://itunes.apple.com/us/app/capture-quick-video-camera/id442879059?mt=8&amp;partnerId=30&amp;siteID=QZ1CsQ8cm0M"><strong>Capture</strong></a></p>
+
+<p>Great utility app that does one thing well: launches a video recorder <strong>fast</strong>.</p>
+
+<p><strong>Mail</strong></p>
+
+<p>Need this one for work, since Sparrow doesn’t support exchange accounts.</p>
+
+<h2>Dock</h2>
+
+<p><strong>Phone</strong></p>
+
+<p>Does its job very well. I have no complaints.</p>
+
+<p><a href="https://itunes.apple.com/us/app/sparrow/id492573565?mt=8&amp;partnerId=30&amp;siteID=QZ1CsQ8cm0M"><strong>Sparrow</strong></a></p>
+
+<p>So far, the absolute best iOS mail app I have used. Sparrow still receives periodic updates, even though it isn’t getting any further feature development.</p>
+
+<p><a href="https://itunes.apple.com/us/app/fantastical/id575647534?mt=8&amp;partnerId=30&amp;siteID=QZ1CsQ8cm0M"><strong>Fantastical</strong></a></p>
+
+<p>Agenda used to occupy this spot, but Fantastical introduced some very thoughtful UI around the calendar, and it has the best blend of features and functionality I have seen.</p>
+
+<p><a href="https://itunes.apple.com/us/app/launch-center-pro/id532016360?mt=8&amp;partnerId=30&amp;siteID=QZ1CsQ8cm0M"><strong>Launch Center Pro</strong></a></p>
+
+<p>Many posts have been written about how great this app is. I use it to get to everything else on my phone. It has replaced 3 rows of apps on my homescreen. The custom action support is awesome.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[CodePilot]]></title>
+    <link href="http://markstruzinski.com/blog/2012/12/12/codepilot/"/>
+    <updated>2012-12-12T16:59:00-05:00</updated>
+    <id>http://markstruzinski.com/blog/2012/12/12/codepilot</id>
+    <content type="html"><![CDATA[<p> I’ve been using a handy little utility named <a href="http://codepilot.cc">CodePilot</a> since Xcode 3.x. CodePilot runs as a plugin and does a few things simply. It will open any file that has been indexed in your project, and also allows for searching symbols within a file.</p>
+
+<!-- more -->
+
+
+<p>I know the native Xcode Open Quickly (⌘ + ⬆ + O) dialog has also been able to do this for a long time, but it has always seemed to me to be a little bit slower and less intuitive than CodePilot.</p>
+
+<h2>Usage</h2>
+
+<p>Using CodePilot is simple. From anywhere within Xcode, type (⌘ + ⬆ + X) to open a search box. The search interface looks like this:</p>
+
+<p><img src="http://markstruzinski.com/images/post_images/codepilot-ui.png"></p>
+
+<p>Compare that to the Open Quickly functionality already bundled with Xcode:</p>
+
+<p><img src="http://markstruzinski.com/images/post_images/xcode_open_quickly.png"></p>
+
+<p>Typing a phrase that matches any part of the file name will bring up a list of matches. Subtext on the matches shows you what group the files resides in. You use the arrow keys to move up or down the list and press enter to open the file in the frontmost Xcode window. By default, when the interface launches, it will display a list of your most recently accessed files descending by time opened.</p>
+
+<p>If you want to perform a quicker search based on the camel-cased uppercase letters in the file name (ex: for ViewController.m, you can type <strong>‘VC’</strong>). Note that the CodePilot UI also underlines the letters it is matching on, which is a nice touch:</p>
+
+<p><img src="http://markstruzinski.com/images/post_images/codepilot-fuzzysearch.png"></p>
+
+<p>You can search for symbols within a file as well. This includes method names, properties, ivars, and other identifiable symbols. For example, if you search for a file named ViewController.m and find it, you can arrow down to it, hit the space bar, then start typing the name of a symbol, such as <strong>‘aw’</strong> for <code>awakeFromNib</code>:</p>
+
+<p><img src="http://markstruzinski.com/images/post_images/codepilot-symbolsearch.png"></p>
+
+<h2>Settings</h2>
+
+<p>CodePilot offers a small list of settings. You can configure:</p>
+
+<ul>
+<li>Remember last search (prefills the box with your last search result)</li>
+<li>Auto search for selected text from Xcode</li>
+</ul>
+
+
+<p>CodePilot offers productivity gains by keeping your hands off of the mouse. It is one of the few utilities that I really miss when working on someone else’s system. Recently, Codepilot went free, which makes me worry for its future. Since it is an Xcode plugin, every time Xcode updates to a new version, there is a good possibility it will break. This has happened in the past, most notably when Xcode moved from v3 to v4.</p>
+
+<p>Hopefully, there will be no breaking changes in future Xcode builds. Until then, it’s a great little utility that help speed me up just a little bit throughout my day.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[OCUnit - Script to Kill Simulator After Tests Run]]></title>
+    <link href="http://markstruzinski.com/blog/2012/10/10/ocunit-script-to-kill-simulator-after-tests-run/"/>
+    <updated>2012-10-10T09:55:00-04:00</updated>
+    <id>http://markstruzinski.com/blog/2012/10/10/ocunit-script-to-kill-simulator-after-tests-run</id>
+    <content type="html"><![CDATA[<p>I’m in the process of adding OCUnit tests to an existing iOS code base. Throughout this process, the biggest pain point I have encountered has been the simulator taking over the screen after an application test suite has run.</p>
+
+<!-- more -->
+
+
+<p>This behavior completely breaks the flow of red/green/refactor, especially when you are on a roll. Here is a typical round trip for me when testing using the default behavior:</p>
+
+<ol>
+<li>Make a code change</li>
+<li>Hit <strong>⌘U</strong> to run the test suite</li>
+<li>Simulator appears and takes over the screen</li>
+<li>Tests complete in Xcode, which is now behind the simulator</li>
+<li><strong>⌘ + Tab</strong> back to Xcode to check the results, or <strong>⌘ + Tab</strong> to the simulator, then <strong>⌘ + Q</strong> to quit it</li>
+</ol>
+
+
+<p>I solved this problem by running a script to close the simulator. To automate this, I hooked into Xcode’s behaviors functionality. Using behaviors, you can specify actions to run before and after testing runs.</p>
+
+<p>Here is a breakdown of how I am now forcing the simulator to close when tests complete:</p>
+
+<ul>
+<li>Open a text file and add the following shell script</li>
+</ul>
+
+
+<figure class='code'><figcaption><span>Close Simulator Script</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="c">#!/bin/sh</span>
+</span><span class='line'>osascript -e <span class="s1">&#39;tell app &quot;iPhone Simulator&quot; to quit&#39;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>Create a folder at the base level of your project named Scripts</li>
+<li>Save the text file into this folder and name it <strong>quitsim.sh</strong></li>
+<li>Open a terminal session, cd to the new Scripts folder, and run the following command on the file to make it executable:</li>
+</ul>
+
+
+<figure class='code'><figcaption><span>Make file executable</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>chmod +x quitsim.sh
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>Now, open Xcode, and go to preferences(⌘,)</li>
+<li>Go to the Behaviors tab</li>
+<li>Under the Testing category, select Succeeds</li>
+<li>Scroll to the bottom, and check the Run selection</li>
+<li>Select <strong>Choose Script &hellip;</strong> from the pull down menu</li>
+<li>Select the script you just saved into the Scripts folder</li>
+<li>Repeat this process for the Fails selection in the Testing category</li>
+</ul>
+
+
+<p>You should now be able to run your test suite and have the simulator close upon completion or failure. This has removed a consistent annoyance for me and sped up my workflow just a little bit.</p>
+
+<p>Every small improvement helps.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Xcode File Template for Kiwi Tests]]></title>
+    <link href="http://markstruzinski.com/blog/2012/08/18/xcode-file-template-for-kiwi-tests/"/>
+    <updated>2012-08-18T16:47:00-04:00</updated>
+    <id>http://markstruzinski.com/blog/2012/08/18/xcode-file-template-for-kiwi-tests</id>
+    <content type="html"><![CDATA[<p>I started using <a href="https://github.com/allending/Kiwi" title="allending/Kiwi">Kiwi</a> to drive unit tests on my most recent project. Kiwi is an excellent <a href="http://en.wikipedia.org/wiki/Behavior-driven_development" title="Behavior-driven development - Wikipedia, the free encyclopedia">BDD (Behavior Driven Development)</a> framework that helps drive your code design by making test expectations very clear. It greatly increases the readability of your unit tests.</p>
+
+<!-- more -->
+
+
+<p>The Kiwi library only requires implementation files to write each spec (test). Per the <a href="https://github.com/allending/Kiwi" title="allending/Kiwi">documentation</a>, you follow these steps to create a spec:</p>
+
+<ol>
+<li>Create a .m file (no header required)</li>
+<li>Add an import for the Kiwi library <code>#import Kiwi.h</code></li>
+<li>Add the begin and end macros that expand at compile time to include the Kiwi code:
+
+<ol>
+<li><code>SPEC_BEGIN(SpecDescription)</code></li>
+<li><code>SPEC_END</code></li>
+</ol>
+</li>
+<li>Inside the <code>SPEC_BEGIN()</code> and <code>SPEC_END</code> macros, write your tests</li>
+</ol>
+
+
+<p>A typical Kiwi test follows this format:</p>
+
+<figure class='code'><figcaption><span>Kiwi Test</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class='objective-c'><span class='line'><span class="n">describe</span><span class="p">(@</span><span class="err">“</span><span class="n">when</span> <span class="err">“</span><span class="n">testing</span> <span class="n">math</span><span class="err">”</span><span class="p">,</span> <span class="o">^</span><span class="p">{</span>
+</span><span class='line'>    <span class="n">context</span><span class="p">(</span><span class="s">@&quot;when adding 2 numbers&quot;</span><span class="p">,</span> <span class="o">^</span><span class="p">{</span>
+</span><span class='line'>        <span class="n">it</span><span class="p">(</span><span class="s">@&quot;should return the correct value&quot;</span><span class="p">,</span> <span class="o">^</span><span class="p">{</span>
+</span><span class='line'>            <span class="kt">int</span> <span class="n">a</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+</span><span class='line'>            <span class="kt">int</span> <span class="n">b</span> <span class="o">=</span> <span class="mi">3</span><span class="p">;</span>
+</span><span class='line'>            <span class="kt">int</span> <span class="n">result</span> <span class="o">=</span> <span class="n">a</span> <span class="o">+</span> <span class="n">b</span><span class="p">;</span>
+</span><span class='line'>            <span class="p">[[</span><span class="n">theValue</span><span class="p">(</span><span class="n">result</span><span class="p">)</span> <span class="n">should</span><span class="p">]</span> <span class="nl">equal</span><span class="p">:</span><span class="n">theValue</span><span class="p">(</span><span class="mi">4</span><span class="p">)];</span>
+</span><span class='line'>        <span class="p">});</span>
+</span><span class='line'>    <span class="p">});</span>
+</span><span class='line'><span class="p">});</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Outside of the 4 lines of code that actually run the test condition, there is a lot of boilerplate code that has to be created to get up and running with a new test spec. I decided to take this opportunity to learn how to create a new Xcode file template.</p>
+
+<p>I found this excellent article on creating <a href="http://www.bobmccune.com/2012/03/04/creating-custom-xcode-4-file-templates/">custom Xcode file templates</a> by <a href="http://www.bobmccune.com">Bob McCune</a>. You can read the link for greater detail, but basically you can create custom templates that will be picked up by Xcode’s New File dialog by creating this directory <code>~/Library/Developer/Xcode/Templates/File Templates/</code> and then placing each of your custom templates inside a folder in that directory.</p>
+
+<p>I created one that accepts a spec name and the first test decription. It creates a shell that includes the Kiwi import statement, the required macros, and the framework for 1 description, context, and test. The description<sup id='fnref:1'><a href='#fn:1' rel='footnote'>1</a></sup> is filled in based on your input in the new file creation dialog. I’ve created a <a href="http://cl.ly/1w3i1H2p1h0z">downloadable zip</a> of the required files. You should just be able to drop this into the location specified above and be up and running.</p>
+
+<p>As soon as possible, I’ll also share this on GitHub.</p>
+
+<div class="footnotes">
+    <ol>
+        <li id='fn:1'><p><a href='#fnref:1' rev='footnote'>↩</a></p>
+</li>
+    </ol>
+</div>
+
+
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Quick Wipe of iOS Simulator Using Alfred]]></title>
+    <link href="http://markstruzinski.com/blog/2012/05/02/quick-wipe-of-ios-simulator-using-alfred/"/>
+    <updated>2012-05-02T07:37:00-04:00</updated>
+    <id>http://markstruzinski.com/blog/2012/05/02/quick-wipe-of-ios-simulator-using-alfred</id>
+    <content type="html"><![CDATA[<p>When I am rapidly prototyping new features, I frequently need to blow out the entire app structure from the simulator and start fresh.</p>
+
+<p>To do this manually, I would follow the following steps.</p>
+
+<p>From Simulator (when simulator is open)*:
+1. Go to Menu Bar
+2. Click iOS Simulator
+3. Click Reset Content and Settings</p>
+
+<!-- more -->
+
+
+<h3>Benefits of this approach:</h3>
+
+<ul>
+<li>Easy to do/remember</li>
+<li>Blows out all settings and apps</li>
+</ul>
+
+
+<h3>Drawbacks to this approach</h3>
+
+<ul>
+<li>Destroys ALL content, including any general settings</li>
+<li>I frequently need to test something more complex, like uploading images. I will save images to the simulator by going to Safari on the simulator and saving images form the web for use in the simulator&rsquo;s photo library. Using the Reset Content option destroys all of this data and it has to be recreated.</li>
+<li>Simulator must already be running to reset settings</li>
+</ul>
+
+
+<h2>From Finder</h2>
+
+<ul>
+<li>Go to path: <strong>~/[user]/Library/Application\ Support/iPhone\ Simulator/[SDK Version]/Applications</strong></li>
+<li>Delete all folders in the Applications folder</li>
+</ul>
+
+
+<h3>Benefits of this approach</h3>
+
+<ul>
+<li>Deletes apps from simulator without wiping settings</li>
+</ul>
+
+
+<h3>Drawbacks to this approach</h3>
+
+<ul>
+<li>Very manual, even when you have a sidebar shortcut set up in the Finder</li>
+</ul>
+
+
+<h2>My solution: Alfred Simulator Wipe</h2>
+
+<p>I love the application <a href="http://www.alfredapp.com/">Alfred</a>. Alfred is an extremely useful app that started its life as an application launcher, and has evolved into a swiss army knife that is ultimately customizable and expandable. When I get on any Mac and hit <strong>⌘-space</strong> and see Spotlight instead of Alfred, I know my productivity will be less than normal. One of the best features of Alfred is the ability to create custom shell/Applescript extensions and run them from the app with a keyword (The devs just added the ability to pipe input into these scripts with v1.2, but I haven&rsquo;t had a chance to play with it yet). This is the technique I used to automate the majority of this simulator wipe process (You have to have purchased the PowerPack to take advantage of extensions). Here is how to create an Alfred extension to wipe your Simulator applications:</p>
+
+<ol>
+<li><a href="http://www.alfredapp.com/#download-alfred">Download Alfred</a></li>
+<li>Open Alfred Preferences (with Alfred open, hit <strong>⌘,</strong>)</li>
+<li>Click the &lsquo;+&rsquo; button at the bottom left of the window:
+<img src="http://markstruzinski.com/images/post_images/wipe-sim-apps.png"></li>
+<li>Select AppleScript</li>
+<li>Enter an Extension Name. Other details are optional.</li>
+<li>To make it look nice in Alfred, you can drag in an icon that will be displayed in the app when the keyword is invoked</li>
+<li>Enter a title and description</li>
+<li>Pick a keyword that Alfred will use to launch the script</li>
+<li>Check the <strong>Background</strong> box (This allows the script to run and not block Alfred until it completes)</li>
+<li>Use the following code in the AppleScript field:</li>
+</ol>
+
+
+<figure class='code'><figcaption><span>Alfred AppleScript</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='applescript'><span class='line'><span class="k">tell</span> <span class="nb">application</span> <span class="o">&amp;</span><span class="nv">ldquo</span><span class="err">;</span><span class="nv">Finder</span><span class="o">&amp;</span><span class="nv">rdquo</span><span class="err">;</span>
+</span><span class='line'><span class="nb">delete</span> <span class="p">(</span><span class="nb">every</span> <span class="nb">item</span> <span class="k">of</span> <span class="nv">folder</span> <span class="o">&amp;</span><span class="nv">ldquo</span><span class="err">;[</span><span class="nv">Drive</span><span class="err">]</span><span class="p">:</span><span class="nv">Users</span><span class="p">:</span><span class="err">[</span><span class="nv">user</span><span class="err">]</span><span class="p">:</span><span class="nv">Library</span><span class="p">:</span><span class="nv">Application</span> <span class="nv">Support</span><span class="p">:</span><span class="nv">iPhone</span> <span class="nv">Simulator</span><span class="p">:</span><span class="mf">5.1</span><span class="p">:</span><span class="nv">Applications</span><span class="o">&amp;</span><span class="nv">rdquo</span><span class="err">;</span><span class="p">)</span>
+</span><span class='line'><span class="k">end</span> <span class="k">tell</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ol>
+<li>The iOS simulator uses a separate directory for each installed SDK. For each iOS SDK on your system (I have 3), add a new line to delete that Simulator&rsquo;s installed apps. You would simply copy the delete line above and change [5.1] to a different folder name.</li>
+<li>Click the Save button when you&rsquo;re done</li>
+<li>Invoke Alfred, then type in the keyword you set up to run the extension</li>
+<li>You should wind up with something like you see below
+<img src="http://markstruzinski.com/images/post_images/alfred-wipe-in-action.png"></li>
+</ol>
+
+
+<p>This will easily wipe out your simulator apps without destroying any data in the simulator itself. It&rsquo;s also a lot easier than going through the Finder every time. I&rsquo;m linking to an export of the extension below. Please let me know in the comments if you are doing anything similar or you can think of any improvements!</p>
+
+<p><a href="http://cl.ly/0w300M1W2B253P412n08">Alfred Simulator Wipe Extension</a></p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Persisting Data Using the Plist Format: Part 2/2]]></title>
+    <link href="http://markstruzinski.com/blog/2012/02/23/persisting-data-using-the-plist-format-part-2-slash-2/"/>
+    <updated>2012-02-23T12:16:00-05:00</updated>
+    <id>http://markstruzinski.com/blog/2012/02/23/persisting-data-using-the-plist-format-part-2-slash-2</id>
+    <content type="html"><![CDATA[<p>This is a follow up to my [previous post]:<a href="http://markstruzinski.com/blog/2012/02/03/persisting-simple-data-using-the-plist-format/">part1</a> on persisting PList data to disk as a form of transient storage for data. This second part will just show an easy way to pull that data from disk and get it into memory in an easily usable format.</p>
+
+<p>All of our Plists are stored as dictionaries. The keys for the dictionaries are stored as constants in a code file (<code>Constants.h/.m</code>). This allows for compile time checking and keeps us from having to litter our code with magic strings when trying to access the values.</p>
+
+<!-- more -->
+
+
+<p>Here is a sample workflow to get this method up and running:</p>
+
+<h2>The PList Data</h2>
+
+<p>Assuming we have a plist that contains the following data:</p>
+
+<figure class='code'><figcaption><span>PList Data</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='xml'><span class='line'><span class="nt">&lt;xml</span> <span class="na">version=</span><span class="s">&quot;1.0&amp;quot; encoding=&quot;</span><span class="err">UTF-8&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'><span class="nt">&lt;DOCTYPE</span> <span class="err">plist</span> <span class="err">PUBLIC</span> <span class="err">&quot;-//Apple//DTD</span> <span class="err">PLIST</span> <span class="err">1.0//EN&quot;</span> <span class="err">&quot;http://www.apple.com/DTDs/PropertyList-1.0.dtd&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'><span class="nt">&lt;plist</span> <span class="na">version=</span><span class="s">&quot;1.0&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'><span class="nt">&lt;dict&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;key&gt;</span>firstName<span class="nt">&lt;/key&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;string&gt;</span>Mark<span class="nt">&lt;/string&gt;</span>
+</span><span class='line'><span class="nt">&lt;/dict&gt;</span>
+</span><span class='line'><span class="nt">&lt;/plist&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>Create a Constants File, and Always Use It</h2>
+
+<p>Create a Constants file, and add all keys to it as <code>const NSString</code>. Be strict and only reference these keys when attempting to access data from your NSDictionaries. Don’t shortcut and put the strings directly into your code. Here is an example of how I have this set up:</p>
+
+<h4>Constants.h</h4>
+
+<figure class='code'><figcaption><span>Constants Header</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='objective-c'><span class='line'><span class="cp">#import &lt;Foundation/Foundation.h&gt;;</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">@interface</span> <span class="nc">Constants</span> : <span class="bp">NSObject</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">extern</span> <span class="bp">NSString</span> <span class="o">*</span> <span class="k">const</span> <span class="n">DICT_KEY_FIRST_NAME</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">@end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h4>Constants.m</h4>
+
+<figure class='code'><figcaption><span>Constants Implementation</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='objective-c'><span class='line'><span class="cp">#import &quot;Constants.h&quot;;</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">@implementation</span> <span class="nc">Constants</span>
+</span><span class='line'>
+</span><span class='line'><span class="bp">NSString</span> <span class="o">*</span> <span class="k">const</span> <span class="n">DICT_KEY_FIRST_NAME</span>   <span class="o">=</span> <span class="s">@&quot;firstName&quot;</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">@end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>Add your Constants file to your pre-compiled headers file so it is available everywhere</h2>
+
+<p>Adding files to your pre-compiled headers makes them available everywhere in your project without having to import each specific class header in the file where you’re trying to use it. Use this convenience judiciously, and only for classes that you truly think you’ll need everywhere. I always include my Constants file in the pre-compiled header to ensure I can access it without having to import it everywhere.</p>
+
+<p>You can find your pre-compiled header file in the <strong>Supporting Files</strong> group in your project navigator in XCode (if you haven’t moved it). It is typically named <code>{projectname}-Prefix.pch</code>, where {projectname} is the name of your project. At the bottom of this file, you can add #import statements for the header fields you are interested in. Your file should look something like this:</p>
+
+<figure class='code'><figcaption><span>Prefix Header</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='objective-c'><span class='line'><span class="cp">#import &lt;Availability.h&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="cp">#ifndef __IPHONE_3_0</span>
+</span><span class='line'><span class="cp">#warning &amp;quot;This project uses features only available in iOS SDK 3.0 and later.&amp;quot;</span>
+</span><span class='line'><span class="cp">#endif</span>
+</span><span class='line'>
+</span><span class='line'><span class="cp">#ifdef __OBJC__</span>
+</span><span class='line'>    <span class="cp">#import &lt;UIKit/UIKit.h&gt;</span>
+</span><span class='line'>    <span class="cp">#import &lt;Foundation/Foundation.h&gt;</span>
+</span><span class='line'>    <span class="cp">#import &lt;CoreData/CoreData.h&gt;</span>
+</span><span class='line'>    <span class="cp">#import &quot;Constants.h&quot;</span>
+</span><span class='line'><span class="cp">#endif</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>The import statement you’re interested in the last one. Make sure you add it inside the <code>#ifdef__OBJC__</code> block.</p>
+
+<p>This adds an #import statement for each file at compile time which includes these files throughout your entire project. It will also update XCode’s autocomplete indexing so that you are able to use autocomplete for the code on the imported files.</p>
+
+<h2>Pull your file from disk, and use the constants defined</h2>
+
+<p>Here is an example of how we could wrap this all up and pull some data from a plist file already on disk:</p>
+
+<figure class='code'><figcaption><span>Retrieve Data</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='objective-c'><span class='line'><span class="bp">NSString</span> <span class="o">*</span><span class="n">filepath</span> <span class="o">=</span> <span class="p">[</span><span class="nb">self</span> <span class="n">convenienceMethodToGetFilePathForPlist</span><span class="p">];</span>
+</span><span class='line'><span class="bp">NSDictionary</span> <span class="o">*</span><span class="n">resultsDict</span> <span class="o">=</span> <span class="p">[</span><span class="bp">NSDictionary</span> <span class="nl">dictionaryWithContentsOfFile</span><span class="p">:</span><span class="n">filepath</span><span class="p">];</span>
+</span><span class='line'><span class="bp">NSString</span> <span class="o">*</span><span class="n">firstName</span> <span class="o">=</span> <span class="p">[</span><span class="n">resultsDict</span> <span class="nl">objectForKey</span><span class="p">:</span><span class="n">DICT_KEY_FIRST_NAME</span><span class="p">];</span>
+</span><span class='line'><span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;First Name: %@&quot;</span><span class="p">,</span><span class="n">firstName</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Note above that you will need a way to get the plist file path before being able to access it. Also note that I prefix the string constant with <code>DICT_KEY</code>. I do this so that as my constants file grows, I can easily locate the value I’m looking for by typing the prefix I’m looking for.</p>
+
+<p>Well, that wraps up this segment. As a caveat here, I’d like to mention that this data storage methodology, in my opinion, would not scale to larger data sets. You should definitely consider using [Core Data]:<a href="https://developer.apple.com/library/mac/#documentation/cocoa/conceptual/coredata/cdprogrammingguide.html">coredata</a> for the majority of your data storage scenarios. We decided to use the PList format in this case because the data was transient, and was going to be wiped out on each subsequent change to it.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Persisting Simple Data Using the Plist Format: Part 1/1]]></title>
+    <link href="http://markstruzinski.com/blog/2012/02/03/persisting-simple-data-using-the-plist-format/"/>
+    <updated>2012-02-03T04:16:00-05:00</updated>
+    <id>http://markstruzinski.com/blog/2012/02/03/persisting-simple-data-using-the-plist-format</id>
+    <content type="html"><![CDATA[<p>Recently, we had the need to save some simple transient data to disk. For data of any significant size, we would have looked at Core Data for our persistence. In this case, we decided to use the PList format to save data to disk and pull it back off. We went through several ideas to store this data.</p>
+
+<p>Some of the ideas we considered for persistence included:</p>
+
+<ul>
+<li>Core Data</li>
+<li>JSON saved in a flat file format</li>
+<li>PList saved directly to disk from a Cocoa object such as an NSArray or NSDictionary</li>
+</ul>
+
+
+<!-- more -->
+
+
+<p>Because of our specific set of requirements and our hardware stack, we opted to go with the PList format. Our main driver for this decision was the amount of control we have over the response format from the server. Since we control our servers and their output, we are able to specify PList as a return type. We use the excellent <a href="https://github.com/AFNetworking/AFNetworking">AFNetworking</a> library to perform our networking tasks.</p>
+
+<p>The AFNetworking library has a request named <a href="http://engineering.gowalla.com/AFNetworking/Classes/AFPropertyListRequestOperation.html">AFPropertyListRequestOperation</a>.<sup id='fnref:1'><a href='#fn:1' rel='footnote'>1</a></sup> This operation will take an NSURLRequest and return an <code>id</code> that can be cast to a native Cocoa object, such as an NSDictionary or NSArray. Because we know the object’s return structure, we directly cast our object and move on to processing it. From there, it is just a matter of using the <code>writeToFile:Atomically</code> method to persist to disk.</p>
+
+<p>Here is an example workflow:</p>
+
+<figure class='code'><figcaption><span>Save PList</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+</pre></td><td class='code'><pre><code class='objective-c'><span class='line'><span class="bp">NSString</span> <span class="o">*</span><span class="n">urlString</span> <span class="o">=</span> <span class="s">@&quot;http://api.responder?format=plist;&quot;</span>
+</span><span class='line'><span class="bp">NSURLRequest</span> <span class="o">*</span><span class="n">urlRequest</span> <span class="o">=</span> <span class="p">[</span><span class="bp">NSURLRequest</span> <span class="nl">requestWithURL</span><span class="p">:[</span><span class="bp">NSURL</span> <span class="nl">urlWithString</span><span class="p">:</span><span class="n">urlString</span><span class="p">]];</span>
+</span><span class='line'>    <span class="n">AFPropertyListRequestOperation</span> <span class="o">*</span><span class="n">operation</span> <span class="o">=</span>
+</span><span class='line'>    <span class="p">[</span><span class="n">AFPropertyListRequestOperation</span> <span class="nl">propertyListRequestOperationWithRequest</span><span class="p">:</span><span class="n">urlString</span> <span class="nl">success</span><span class="p">:</span><span class="o">^</span><span class="p">(</span><span class="bp">NSURLRequest</span> <span class="o">*</span><span class="n">request</span><span class="p">,</span> <span class="bp">NSHTTPURLResponse</span> <span class="o">*</span><span class="n">response</span><span class="p">,</span> <span class="kt">id</span> <span class="n">propertyList</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="c1">// Cache the response</span>
+</span><span class='line'>        <span class="bp">NSDictionary</span> <span class="o">*</span><span class="n">responseDict</span> <span class="o">=</span> <span class="p">(</span><span class="bp">NSDictionary</span> <span class="o">*</span><span class="p">)</span><span class="n">propertyList</span><span class="p">;</span>
+</span><span class='line'>        <span class="bp">NSArray</span> <span class="o">*</span><span class="n">pathArray</span> <span class="o">=</span> <span class="n">NSSearchPathForDirectoriesInDomains</span><span class="p">(</span><span class="n">NSCachesDirectory</span><span class="p">,</span> <span class="n">NSUserDomainMask</span><span class="p">,</span> <span class="nb">YES</span><span class="p">);</span>
+</span><span class='line'>        <span class="bp">NSString</span> <span class="o">*</span><span class="n">cachesPath</span> <span class="o">=</span> <span class="p">[</span><span class="n">pathArray</span> <span class="n">lastObject</span><span class="p">];</span>
+</span><span class='line'>        <span class="bp">NSString</span> <span class="o">*</span><span class="n">filePath</span> <span class="o">=</span> <span class="p">[</span><span class="bp">NSString</span> <span class="nl">pathWithComponents</span><span class="p">:[</span><span class="bp">NSArray</span> <span class="nl">arrayWithObjects</span><span class="p">:</span><span class="n">cachesPath</span><span class="p">,@</span><span class="o">&amp;</span><span class="n">quot</span><span class="p">;</span><span class="n">responseDict</span><span class="p">.</span><span class="n">plist</span><span class="o">&amp;</span><span class="n">quot</span><span class="p">;,</span><span class="nb">nil</span><span class="p">]];</span>
+</span><span class='line'>        <span class="kt">BOOL</span> <span class="n">success</span> <span class="o">=</span> <span class="p">[</span><span class="n">responseDict</span> <span class="nl">writeToFile</span><span class="p">:</span><span class="n">filePath</span> <span class="nl">atomically</span><span class="p">:</span><span class="nb">YES</span><span class="p">];</span>
+</span><span class='line'>        <span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="n">success</span><span class="p">){</span>
+</span><span class='line'>            <span class="c1">// Handle error</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>    <span class="p">}</span> <span class="nl">failure</span><span class="p">:</span><span class="o">^</span><span class="p">(</span><span class="bp">NSURLRequest</span> <span class="o">*</span><span class="n">request</span><span class="p">,</span> <span class="bp">NSHTTPURLResponse</span> <span class="o">*</span><span class="n">response</span><span class="p">,</span> <span class="bp">NSError</span> <span class="o">*</span><span class="n">error</span><span class="p">,</span> <span class="kt">id</span> <span class="n">propertyList</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">NSLog</span><span class="p">(@</span><span class="o">&amp;</span><span class="n">quot</span><span class="p">;</span><span class="n">API</span> <span class="n">Call</span> <span class="nl">failure</span><span class="p">:</span> <span class="o">%</span><span class="p">@</span><span class="o">&amp;</span><span class="n">quot</span><span class="p">;,[</span><span class="n">error</span> <span class="n">localizedDescription</span><span class="p">]);</span>
+</span><span class='line'>    <span class="p">}];</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>One caveat here is to be careful that your dictionary is properly formatted when being returned from the server, and when attempting to save to disk. Initially, we had some bugs when nulls were encountered as a response from the server for specific values. The server parsing logic would simply not generate a value for the key if the value was null. In PList format, this is unacceptable syntax. If you tried to save this to disk, the call would fail and return NO from the <code>writeToFile: method</code>.</p>
+
+<p>For my next post, I’ll do a quick follow up on how to pull the data back off of disk and get it into a usable format in memory.</p>
+
+<div class="footnotes">
+    <ol>
+        <li id='fn:1'><p><a href='#fnref:1' rev='footnote'>↩</a></p>
+</li>
+    </ol>
+</div>
+
+
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Goodbye, Steve]]></title>
+    <link href="http://markstruzinski.com/blog/2011/10/06/goodbye-steve/"/>
+    <updated>2011-10-06T05:31:00-04:00</updated>
+    <id>http://markstruzinski.com/blog/2011/10/06/goodbye-steve</id>
+    <content type="html"><![CDATA[<p>I didn’t become an Apple user until a few years ago. I came to the platform out of curiosity. I bought myself a Macbook to start teaching myself how to code iOS apps. I quickly found myself amazed at the ingenuity and simplicity of the entire platform. It was the way everything tied together, and always seemed to work in the way you expected. The more I lived in the Apple world, the more impressed I became. In 3 years, I have gone from using Apple’s products as a hobby to a full time developer on their platform. For the first time in my life, I have questioned that someone actually pays me to work on this stuff. I guess if you ask yourself that question, you are doing the right thing with your life.</p>
+
+<!-- more -->
+
+
+<p>I was surprised and saddened to hear of Steve Jobs’ passing tonight. He truly made a difference in our world with sheer will and by questioning everything. His stamp is all over these products we all use every day for entertainment and for work. His drive and determination produced these incredible products and services which set the standard for excellence in technology.</p>
+
+<p>A quote out of the recent statement by President Obama on Steve Jobs’ passing struck me as particularly apt.</p>
+
+<blockquote><p>The world has lost a visionary. And there may be no greater tribute to Steve’s success than the fact that much of the world learned of his passing on a device he invented.</p><footer><strong>President Barak Obama</strong> <cite>Dedication</cite></footer></blockquote>
+
+
+<p>I was glad to hear he passed peacefully and with his family.</p>
+
+<p>Rest in peace, Steve. Our world is a little less without you in it.</p>
+]]></content>
+  </entry>
+  
+</feed>

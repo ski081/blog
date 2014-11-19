@@ -1,0 +1,167 @@
+
+<!DOCTYPE HTML>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Orientation Changes in iOS 6  | Mark Struzinski</title>
+
+	<meta name="author" content="Mark Struzinski"> 
+	
+	<meta name="description" content="In a current project, I had the need to have one specific view controller present its view in landscape orientation only. Pre-iOS 6, I would have &hellip;"> <meta name="keywords" content="">
+
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+	<link href="http://feedpress.me/markstruzinski" rel="alternate" title="Mark Struzinski" type="application/atom+xml">
+	<link rel="canonical" href="">
+	<link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+	<link href="/stylesheets/font-awesome.min.css" rel="stylesheet" type="text/css">
+	
+	<!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+	
+</head>
+
+
+
+<body>
+	<header id="header" class="inner"><h1>Mark Struzinski</h1>
+<nav id="main-nav"><ul>
+	<li><a href="/">Blog</a></li>
+	<li><a href="/archives">Archive</a></li>
+	<li><a href="/about">About</a></li>
+    <li><a href="/portfolio">Portfolio</a></li>
+</ul>
+</nav>
+
+
+</header>
+
+	<div id="content" class="inner"><article class="post">
+	<h2 class="title">Orientation Changes in iOS 6</h2>
+	<div class="entry-content"><p>In a current project, I had the need to have one specific view controller present its view in landscape orientation only. Pre-iOS 6, I would have overridden the <code>shouldAutoRotateToInterfaceOrientation</code> method and returned <code>UIInterfaceOrientationLandscape</code>. In iOS 6, this method is deprecated. I began researching how orientation issues should be handled going forward, and here is the way I made my specific scenario work.</p>
+
+<!-- more -->
+
+
+<p>In iOS 6, the system queries the <strong>topmost</strong> visible view controller to see if it should rotate. The viewcontroller can override 2 methods to answer this query correctly:</p>
+
+<ul>
+<li><code>supportedInterfaceOrientations:</code></li>
+<li><code>shouldAutoRotate</code></li>
+</ul>
+
+
+<p>It would seem simple enough to override these methods on each view controller that had special requirements for presentation to have them determine their orientation. The problem arose for me when I had a navigation controller thrown into the mix. Since technically the topmost view controller in a navigation stack is the navigation controller itself, iOS was ignoring the method overrides I had in place for the individual view controllers. It was sending the message directly to my UINavigationController, which did not provide the settings I needed.</p>
+
+<p>I solved this issue by subclassing UINavigationController and overriding the previously mentioned methods, then passing the results from the navigation controller down into the top view controller via the <code>topViewController</code> property. Here are the steps to accomplish this:</p>
+
+<ol>
+<li>Create a subclass of <code>UINavigationController</code></li>
+<li>Override the following methods:
+
+<ol>
+<li><code>-(UIInterfaceOrientation)preferredInterfaceOrientationForPresentation</code></li>
+<li><code>-(NSUInteger)supportedInterfaceOrientations</code></li>
+<li><code>-(BOOL)shouldAutorotate</code></li>
+</ol>
+</li>
+<li>Return the result of each of these operations by passing in the value from the result of calling that method on the topViewControllerof the UINavigationController</li>
+<li>Implement any or all of those methods specific to your needs on your UIViewController subclasses</li>
+<li>Make sure you are using your <code>UINavigationController</code> subclass in place of the standard <code>UINavigationController</code>
+
+<ol>
+<li>My project uses storyboards, so I simply specified my UINavigationController subclass in the Identity Inspector</li>
+</ol>
+</li>
+</ol>
+
+
+<p>Here is my implementation of the navigation controller subclass in its entirety:</p>
+
+<figure class='code'><figcaption><span>UINavigationController Subclass</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+</pre></td><td class='code'><pre><code class='objective-c'><span class='line'>  <span class="k">@implementation</span> <span class="nc">FMNavigationController</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="o">-</span><span class="p">(</span><span class="kt">BOOL</span><span class="p">)</span><span class="n">shouldAutorotate</span><span class="p">{</span>
+</span><span class='line'>      <span class="k">return</span> <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">topViewController</span> <span class="n">shouldAutorotate</span><span class="p">];</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="o">-</span><span class="p">(</span><span class="bp">NSUInteger</span><span class="p">)</span><span class="n">supportedInterfaceOrientations</span><span class="p">{</span>
+</span><span class='line'>      <span class="k">return</span> <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">topViewController</span> <span class="n">supportedInterfaceOrientations</span><span class="p">];</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="o">-</span><span class="p">(</span><span class="n">UIInterfaceOrientation</span><span class="p">)</span><span class="n">preferredInterfaceOrientationForPresentation</span><span class="p">{</span>
+</span><span class='line'>      <span class="k">return</span> <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">topViewController</span> <span class="n">preferredInterfaceOrientationForPresentation</span><span class="p">];</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">@end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Then, in my specific view controller that needs to be launched in landscape, I overrode this method and returned the appropriate value:</p>
+
+<figure class='code'><figcaption><span>View Controller Method Overrides</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='objective-c'><span class='line'>  <span class="cp">#pragma mark - Rotation</span>
+</span><span class='line'>  <span class="o">-</span><span class="p">(</span><span class="bp">NSUInteger</span><span class="p">)</span><span class="n">supportedInterfaceOrientations</span><span class="p">{</span>
+</span><span class='line'>      <span class="k">return</span> <span class="n">UIInterfaceOrientationMaskLandscape</span><span class="p">;</span>
+</span><span class='line'>  <span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>That’s really all there was to it. The research to get this right took much longer than the implementation.</p>
+
+<p>Please contact me with any questions, and good luck.</p>
+</div>
+
+
+<div class="meta">
+	<div class="date">
+
+
+
+
+
+
+
+
+  
+
+
+
+<time datetime="2013-03-11T11:05:00-04:00" pubdate data-updated="true">Mar 11th, 2013</time></div>
+	
+
+<div class="tags">
+
+	<a class='category' href='/blog/categories/orientation/'>orientation</a>
+
+</div>
+
+
+</div>
+</article>
+</div>
+	<footer id="footer" class="inner">Copyright &copy; 2014
+ Mark Struzinski 
+<br>
+Powered by Octopress.
+</footer>
+	
+
+</body>
+</html>

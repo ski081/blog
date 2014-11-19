@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: simulator | Mark Struzinski]]></title>
+  <link href="http://markstruzinski.com/blog/categories/simulator/atom.xml" rel="self"/>
+  <link href="http://markstruzinski.com/"/>
+  <updated>2014-11-16T19:37:40-05:00</updated>
+  <id>http://markstruzinski.com/</id>
+  <author>
+    <name><![CDATA[Mark Struzinski]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[OCUnit - Script to Kill Simulator After Tests Run]]></title>
+    <link href="http://markstruzinski.com/blog/2012/10/10/ocunit-script-to-kill-simulator-after-tests-run/"/>
+    <updated>2012-10-10T09:55:00-04:00</updated>
+    <id>http://markstruzinski.com/blog/2012/10/10/ocunit-script-to-kill-simulator-after-tests-run</id>
+    <content type="html"><![CDATA[<p>I’m in the process of adding OCUnit tests to an existing iOS code base. Throughout this process, the biggest pain point I have encountered has been the simulator taking over the screen after an application test suite has run.</p>
+
+<!-- more -->
+
+
+<p>This behavior completely breaks the flow of red/green/refactor, especially when you are on a roll. Here is a typical round trip for me when testing using the default behavior:</p>
+
+<ol>
+<li>Make a code change</li>
+<li>Hit <strong>⌘U</strong> to run the test suite</li>
+<li>Simulator appears and takes over the screen</li>
+<li>Tests complete in Xcode, which is now behind the simulator</li>
+<li><strong>⌘ + Tab</strong> back to Xcode to check the results, or <strong>⌘ + Tab</strong> to the simulator, then <strong>⌘ + Q</strong> to quit it</li>
+</ol>
+
+
+<p>I solved this problem by running a script to close the simulator. To automate this, I hooked into Xcode’s behaviors functionality. Using behaviors, you can specify actions to run before and after testing runs.</p>
+
+<p>Here is a breakdown of how I am now forcing the simulator to close when tests complete:</p>
+
+<ul>
+<li>Open a text file and add the following shell script
+<figure class='code'><figcaption><span>Close Simulator Script</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>&lt;h1&gt;!/bin/sh&lt;/h1&gt;
+</span><span class='line'>
+</span><span class='line'>&lt;p&gt;osascript -e <span class="p">&amp;</span>lsquo<span class="p">;</span>tell app <span class="p">&amp;</span>ldquo<span class="p">;</span>iPhone Simulator<span class="p">&amp;</span>rdquo<span class="p">;</span> to quit<span class="p">&amp;</span>rsquo<span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure></p></li>
+<li>Create a folder at the base level of your project named Scripts</li>
+<li>Save the text file into this folder and name it <strong>quitsim.sh</strong></li>
+<li>Open a terminal session, cd to the new Scripts folder, and run the following command on the file to make it executable:</li>
+</ul>
+
+
+<pre><code class="bash Make file executable">
+chmod +x quitsim.sh
+</code></pre>
+
+<ul>
+<li>Now, open Xcode, and go to preferences(⌘,)</li>
+<li>Go to the Behaviors tab</li>
+<li>Under the Testing category, select Succeeds</li>
+<li>Scroll to the bottom, and check the Run selection</li>
+<li>Select <strong>Choose Script &hellip;</strong> from the pull down menu</li>
+<li>Select the script you just saved into the Scripts folder</li>
+<li>Repeat this process for the Fails selection in the Testing category</li>
+</ul>
+
+
+<p>You should now be able to run your test suite and have the simulator close upon completion or failure. This has removed a consistent annoyance for me and sped up my workflow just a little bit.</p>
+
+<p>Every small improvement helps.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Quick Wipe of iOS Simulator Using Alfred]]></title>
+    <link href="http://markstruzinski.com/blog/2012/05/02/quick-wipe-of-ios-simulator-using-alfred/"/>
+    <updated>2012-05-02T07:37:00-04:00</updated>
+    <id>http://markstruzinski.com/blog/2012/05/02/quick-wipe-of-ios-simulator-using-alfred</id>
+    <content type="html"><![CDATA[<p>When I am rapidly prototyping new features, I frequently need to blow out the entire app structure from the simulator and start fresh.</p>
+
+<p>To do this manually, I would follow the following steps.</p>
+
+<p>From Simulator (when simulator is open)*:
+1. Go to Menu Bar
+2. Click iOS Simulator
+3. Click Reset Content and Settings</p>
+
+<!-- more -->
+
+
+<h3>Benefits of this approach:</h3>
+
+<ul>
+<li>Easy to do/remember</li>
+<li>Blows out all settings and apps</li>
+</ul>
+
+
+<h3>Drawbacks to this approach</h3>
+
+<ul>
+<li>Destroys ALL content, including any general settings</li>
+<li>I frequently need to test something more complex, like uploading images. I will save images to the simulator by going to Safari on the simulator and saving images form the web for use in the simulator&rsquo;s photo library. Using the Reset Content option destroys all of this data and it has to be recreated.</li>
+<li>Simulator must already be running to reset settings</li>
+</ul>
+
+
+<h2>From Finder</h2>
+
+<ul>
+<li>Go to path: <strong>~/[user]/Library/Application\ Support/iPhone\ Simulator/[SDK Version]/Applications</strong></li>
+<li>Delete all folders in the Applications folder</li>
+</ul>
+
+
+<h3>Benefits of this approach</h3>
+
+<ul>
+<li>Deletes apps from simulator without wiping settings</li>
+</ul>
+
+
+<h3>Drawbacks to this approach</h3>
+
+<ul>
+<li>Very manual, even when you have a sidebar shortcut set up in the Finder</li>
+</ul>
+
+
+<h2>My solution: Alfred Simulator Wipe</h2>
+
+<p>I love the application <a href="http://www.alfredapp.com/">Alfred</a>. Alfred is an extremely useful app that started its life as an application launcher, and has evolved into a swiss army knife that is ultimately customizable and expandable. When I get on any Mac and hit <strong>⌘-space</strong> and see Spotlight instead of Alfred, I know my productivity will be less than normal. One of the best features of Alfred is the ability to create custom shell/Applescript extensions and run them from the app with a keyword (The devs just added the ability to pipe input into these scripts with v1.2, but I haven&rsquo;t had a chance to play with it yet). This is the technique I used to automate the majority of this simulator wipe process (You have to have purchased the PowerPack to take advantage of extensions). Here is how to create an Alfred extension to wipe your Simulator applications:</p>
+
+<ol>
+<li><a href="http://www.alfredapp.com/#download-alfred">Download Alfred</a></li>
+<li>Open Alfred Preferences (with Alfred open, hit <strong>⌘,</strong>)</li>
+<li>Click the &lsquo;+&rsquo; button at the bottom left of the window:
+<img src="/images/post_images/wipe-sim-apps.png"></li>
+<li>Select AppleScript</li>
+<li>Enter an Extension Name. Other details are optional.</li>
+<li>To make it look nice in Alfred, you can drag in an icon that will be displayed in the app when the keyword is invoked</li>
+<li>Enter a title and description</li>
+<li>Pick a keyword that Alfred will use to launch the script</li>
+<li>Check the <strong>Background</strong> box (This allows the script to run and not block Alfred until it completes)</li>
+<li>Use the following code in the AppleScript field:
+<code>applescript Alfred AppleScript
+tell application &amp;ldquo;Finder&amp;rdquo;
+delete (every item of folder &amp;ldquo;[Drive]:Users:[user]:Library:Application Support:iPhone Simulator:5.1:Applications&amp;rdquo;)
+end tell
+</code></li>
+<li>The iOS simulator uses a separate directory for each installed SDK. For each iOS SDK on your system (I have 3), add a new line to delete that Simulator&rsquo;s installed apps. You would simply copy the delete line above and change [5.1] to a different folder name.</li>
+<li>Click the Save button when you&rsquo;re done</li>
+<li>Invoke Alfred, then type in the keyword you set up to run the extension</li>
+<li>You should wind up with something like you see below
+<img src="/images/post_images/alfred-wipe-in-action.png"></li>
+</ol>
+
+
+<p>This will easily wipe out your simulator apps without destroying any data in the simulator itself. It&rsquo;s also a lot easier than going through the Finder every time. I&rsquo;m linking to an export of the extension below. Please let me know in the comments if you are doing anything similar or you can think of any improvements!</p>
+
+<p><a href="http://cl.ly/0w300M1W2B253P412n08">Alfred Simulator Wipe Extension</a></p>
+]]></content>
+  </entry>
+  
+</feed>

@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: unit-testing-series | Mark Struzinski]]></title>
+  <link href="http://markstruzinski.com/blog/categories/unit-testing-series/atom.xml" rel="self"/>
+  <link href="http://markstruzinski.com/"/>
+  <updated>2014-11-16T19:37:40-05:00</updated>
+  <id>http://markstruzinski.com/</id>
+  <author>
+    <name><![CDATA[Mark Struzinski]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[Setting up iOS Logic Tests [Part 1]]]></title>
+    <link href="http://markstruzinski.com/blog/2013/02/08/setting-up-ios-logic-tests/"/>
+    <updated>2013-02-08T11:47:00-05:00</updated>
+    <id>http://markstruzinski.com/blog/2013/02/08/setting-up-ios-logic-tests</id>
+    <content type="html"><![CDATA[<p>I&rsquo;m continuing on my task to get a full project using iOS unit tests and integration tests. My first step is to set up logic tests in Xcode. I recently watched an excellent <a href="http://www.lynda.com/iOS-tutorials/Unit-Testing-iOS-Applications-Xcode/91949-2.html?srchtrk=index%3a0%0alinktypeid%3a2%0aq%3aios+unit%0apage%3a1%0as%3arelevance%0asa%3atrue%0aproducttypeid%3a2">unit testing course</a> on <a href="http://www.lynda.com">Lynda</a>. In that course, Ron Lisle goes over the advantages of using logic tests. The most compelling factor in using logic tests over application tests is speed.</p>
+
+<!-- more -->
+
+
+<p>Application tests actually bootstrap the entire app in order to run. This takes a considerable amount of time and can be a bottleneck. You want your unit tests to run fast. Logic tests will build the main application bundle, but then run in isolation and tests methods on any class you are interested in. I decided to write as many logic tests as possible, and only switch to application tests when logic tests could not get the job done. I am anticipating that I will need to use application tests once I start testing view controllers, but I won’t know until I get there.</p>
+
+<h2>Setting up the project</h2>
+
+<p>I am starting from a blank slate, but I have one caveat: I want to use <a href="http://cocoapods.org/" title="CocoaPods: The Objective-C Library Manager">CocoaPods</a> for all of my external library maintenance. If you haven’t heard of CocoaPods, you should read up on it. CocoaPods is a way to manage your 3rd party dependencies more easily. It supports updating libraries in place and removes a lot of pain with integrating 3rd party code. As you will see, however, using CocoaPods with logic tests makes things a little more complex during setup.</p>
+
+<p>To begin, start a new project without any unit tests included.</p>
+
+<p><img src="/images/post_images/logictests-project-setup.png"></p>
+
+<p>Next, make sure you have the cocoa pods gem set up . There are directions <a href="http://cocoapods.org/" title="CocoaPods: The Objective-C Library Manager">CocoaPods Setup</a> if you’ve never done this before. After that, let’s bring in 2 3rd party libraries by creating a podspec file and telling CocoaPods to set everything up for us.</p>
+
+<h2>Set up a Podspec file</h2>
+
+<ol>
+<li>Close Xcode if it’s still open</li>
+<li>Create a file in the base folder of your project named <code>Podfile</code> with no extension</li>
+<li>Add a line telling CocoaPods the platform and version of iOS you are using.
+
+<ol>
+<li><code>platform :ios, '6.0'</code></li>
+</ol>
+</li>
+<li>Add lines for 2 pods (these are really dependencies on 3rd party code)
+
+<ol>
+<li><code>pod ‘SVProgressHUD’</code></li>
+<li><code>pod ‘MagicalRecord’</code></li>
+</ol>
+</li>
+<li>Save your file and close it</li>
+<li>Open terminal, navigate to the base folder of your project, and enter the following line
+
+<ol>
+<li><code>pod install</code></li>
+</ol>
+</li>
+<li>You should see some status lines go by, then a line instructing you to use a workspace now instead of the project file. This is because CocoaPods creates a second project named <code>Pods</code> and adds it and your original project to a workspace named after your project. In my case, it created a <code>LogicTests.xcworkspace file</code>. If I open that file now, I can see that I have a <code>Pods</code> project and a <code>LogicTests</code> project inside of the workspace.</li>
+</ol>
+
+
+<p><img src="/images/post_images/logictests-cocoapods-project.png"></p>
+
+<p>We&rsquo;re going to break here for now. Next, we&rsquo;ll start making use of the 3rd party libraries we included via CocoaPods. After that, we&rsquo;ll finally set up the logic tests and get them running.</p>
+]]></content>
+  </entry>
+  
+</feed>

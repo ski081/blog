@@ -1,0 +1,207 @@
+
+<!DOCTYPE HTML>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Persisting Data Using the Plist Format: Part 2/2  | Mark Struzinski</title>
+
+	<meta name="author" content="Mark Struzinski"> 
+	
+	<meta name="description" content="This is a follow up to my [previous post]:part1 on persisting PList data to disk as a form of transient storage for data. This second part will just &hellip;"> <meta name="keywords" content="">
+
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+	<link href="http://feedpress.me/markstruzinski" rel="alternate" title="Mark Struzinski" type="application/atom+xml">
+	<link rel="canonical" href="">
+	<link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+	<link href="/stylesheets/font-awesome.min.css" rel="stylesheet" type="text/css">
+	
+	<!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+	
+</head>
+
+
+
+<body>
+	<header id="header" class="inner"><h1>Mark Struzinski</h1>
+<nav id="main-nav"><ul>
+	<li><a href="/">Blog</a></li>
+	<li><a href="/archives">Archive</a></li>
+	<li><a href="/about">About</a></li>
+    <li><a href="/portfolio">Portfolio</a></li>
+</ul>
+</nav>
+
+
+</header>
+
+	<div id="content" class="inner"><article class="post">
+	<h2 class="title">Persisting Data Using the Plist Format: Part 2/2</h2>
+	<div class="entry-content"><p>This is a follow up to my [previous post]:<a href="http://markstruzinski.com/blog/2012/02/03/persisting-simple-data-using-the-plist-format/">part1</a> on persisting PList data to disk as a form of transient storage for data. This second part will just show an easy way to pull that data from disk and get it into memory in an easily usable format.</p>
+
+<p>All of our Plists are stored as dictionaries. The keys for the dictionaries are stored as constants in a code file (<code>Constants.h/.m</code>). This allows for compile time checking and keeps us from having to litter our code with magic strings when trying to access the values.</p>
+
+<!-- more -->
+
+
+<p>Here is a sample workflow to get this method up and running:</p>
+
+<h2>The PList Data</h2>
+
+<p>Assuming we have a plist that contains the following data:</p>
+
+<figure class='code'><figcaption><span>PList Data</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='xml'><span class='line'><span class="nt">&lt;xml</span> <span class="na">version=</span><span class="s">&quot;1.0&amp;quot; encoding=&quot;</span><span class="err">UTF-8&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'><span class="nt">&lt;DOCTYPE</span> <span class="err">plist</span> <span class="err">PUBLIC</span> <span class="err">&quot;-//Apple//DTD</span> <span class="err">PLIST</span> <span class="err">1.0//EN&quot;</span> <span class="err">&quot;http://www.apple.com/DTDs/PropertyList-1.0.dtd&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'><span class="nt">&lt;plist</span> <span class="na">version=</span><span class="s">&quot;1.0&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'><span class="nt">&lt;dict&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;key&gt;</span>firstName<span class="nt">&lt;/key&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;string&gt;</span>Mark<span class="nt">&lt;/string&gt;</span>
+</span><span class='line'><span class="nt">&lt;/dict&gt;</span>
+</span><span class='line'><span class="nt">&lt;/plist&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>Create a Constants File, and Always Use It</h2>
+
+<p>Create a Constants file, and add all keys to it as <code>const NSString</code>. Be strict and only reference these keys when attempting to access data from your NSDictionaries. Don’t shortcut and put the strings directly into your code. Here is an example of how I have this set up:</p>
+
+<h4>Constants.h</h4>
+
+<figure class='code'><figcaption><span>Constants Header</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='objective-c'><span class='line'><span class="cp">#import &lt;Foundation/Foundation.h&gt;;</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">@interface</span> <span class="nc">Constants</span> : <span class="bp">NSObject</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">extern</span> <span class="bp">NSString</span> <span class="o">*</span> <span class="k">const</span> <span class="n">DICT_KEY_FIRST_NAME</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">@end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h4>Constants.m</h4>
+
+<figure class='code'><figcaption><span>Constants Implementation</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='objective-c'><span class='line'><span class="cp">#import &quot;Constants.h&quot;;</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">@implementation</span> <span class="nc">Constants</span>
+</span><span class='line'>
+</span><span class='line'><span class="bp">NSString</span> <span class="o">*</span> <span class="k">const</span> <span class="n">DICT_KEY_FIRST_NAME</span>   <span class="o">=</span> <span class="s">@&quot;firstName&quot;</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">@end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>Add your Constants file to your pre-compiled headers file so it is available everywhere</h2>
+
+<p>Adding files to your pre-compiled headers makes them available everywhere in your project without having to import each specific class header in the file where you’re trying to use it. Use this convenience judiciously, and only for classes that you truly think you’ll need everywhere. I always include my Constants file in the pre-compiled header to ensure I can access it without having to import it everywhere.</p>
+
+<p>You can find your pre-compiled header file in the <strong>Supporting Files</strong> group in your project navigator in XCode (if you haven’t moved it). It is typically named <code>{projectname}-Prefix.pch</code>, where {projectname} is the name of your project. At the bottom of this file, you can add #import statements for the header fields you are interested in. Your file should look something like this:</p>
+
+<figure class='code'><figcaption><span>Prefix Header</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='objective-c'><span class='line'><span class="cp">#import &lt;Availability.h&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="cp">#ifndef __IPHONE_3_0</span>
+</span><span class='line'><span class="cp">#warning &amp;quot;This project uses features only available in iOS SDK 3.0 and later.&amp;quot;</span>
+</span><span class='line'><span class="cp">#endif</span>
+</span><span class='line'>
+</span><span class='line'><span class="cp">#ifdef __OBJC__</span>
+</span><span class='line'>    <span class="cp">#import &lt;UIKit/UIKit.h&gt;</span>
+</span><span class='line'>    <span class="cp">#import &lt;Foundation/Foundation.h&gt;</span>
+</span><span class='line'>    <span class="cp">#import &lt;CoreData/CoreData.h&gt;</span>
+</span><span class='line'>    <span class="cp">#import &quot;Constants.h&quot;</span>
+</span><span class='line'><span class="cp">#endif</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>The import statement you’re interested in the last one. Make sure you add it inside the <code>#ifdef__OBJC__</code> block.</p>
+
+<p>This adds an #import statement for each file at compile time which includes these files throughout your entire project. It will also update XCode’s autocomplete indexing so that you are able to use autocomplete for the code on the imported files.</p>
+
+<h2>Pull your file from disk, and use the constants defined</h2>
+
+<p>Here is an example of how we could wrap this all up and pull some data from a plist file already on disk:</p>
+
+<figure class='code'><figcaption><span>Retrieve Data</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='objective-c'><span class='line'><span class="bp">NSString</span> <span class="o">*</span><span class="n">filepath</span> <span class="o">=</span> <span class="p">[</span><span class="nb">self</span> <span class="n">convenienceMethodToGetFilePathForPlist</span><span class="p">];</span>
+</span><span class='line'><span class="bp">NSDictionary</span> <span class="o">*</span><span class="n">resultsDict</span> <span class="o">=</span> <span class="p">[</span><span class="bp">NSDictionary</span> <span class="nl">dictionaryWithContentsOfFile</span><span class="p">:</span><span class="n">filepath</span><span class="p">];</span>
+</span><span class='line'><span class="bp">NSString</span> <span class="o">*</span><span class="n">firstName</span> <span class="o">=</span> <span class="p">[</span><span class="n">resultsDict</span> <span class="nl">objectForKey</span><span class="p">:</span><span class="n">DICT_KEY_FIRST_NAME</span><span class="p">];</span>
+</span><span class='line'><span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;First Name: %@&quot;</span><span class="p">,</span><span class="n">firstName</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Note above that you will need a way to get the plist file path before being able to access it. Also note that I prefix the string constant with <code>DICT_KEY</code>. I do this so that as my constants file grows, I can easily locate the value I’m looking for by typing the prefix I’m looking for.</p>
+
+<p>Well, that wraps up this segment. As a caveat here, I’d like to mention that this data storage methodology, in my opinion, would not scale to larger data sets. You should definitely consider using [Core Data]:<a href="https://developer.apple.com/library/mac/#documentation/cocoa/conceptual/coredata/cdprogrammingguide.html">coredata</a> for the majority of your data storage scenarios. We decided to use the PList format in this case because the data was transient, and was going to be wiped out on each subsequent change to it.</p>
+</div>
+
+
+<div class="meta">
+	<div class="date">
+
+
+
+
+
+
+
+
+  
+
+
+
+<time datetime="2012-02-23T12:16:00-05:00" pubdate data-updated="true">Feb 23rd, 2012</time></div>
+	
+
+<div class="tags">
+
+	<a class='category' href='/blog/categories/cocoa/'>cocoa</a>, <a class='category' href='/blog/categories/persistence/'>persistence</a>, <a class='category' href='/blog/categories/plist/'>plist</a>
+
+</div>
+
+
+</div>
+</article>
+</div>
+	<footer id="footer" class="inner">Copyright &copy; 2014
+ Mark Struzinski 
+<br>
+Powered by Octopress.
+</footer>
+	
+
+</body>
+</html>
